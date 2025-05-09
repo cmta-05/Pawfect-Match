@@ -19,14 +19,55 @@ const upload = multer({ storage: storage });
 router.post('/', upload.single('profileImage'), async (req, res) => {
   try {
     const petData = req.body;
+    
+    // Defensive: If gender is an array, take the first value
+    if (Array.isArray(petData.gender)) {
+      petData.gender = petData.gender[0];
+    }
+    
+    // Validate required fields
+    const requiredFields = ['name', 'type', 'breed', 'age', 'gender', 'location', 'description', 'userId'];
+    const missingFields = requiredFields.filter(field => !petData[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate gender
+    if (!['Male', 'Female'].includes(petData.gender)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gender must be either "Male" or "Female"'
+      });
+    }
+
+    // Handle image upload
     if (req.file) {
       petData.profileImage = '/uploads/' + req.file.filename;
+    } else {
+      // Set a default image if none provided
+      petData.profileImage = '/uploads/default-pet.jpg';
     }
+
+    // Create and save the pet
     const pet = new Pet(petData);
     await pet.save();
-    res.status(201).json(pet);
+
+    res.status(201).json({
+      success: true,
+      message: 'Pet created successfully',
+      data: pet
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error creating pet:', error);
+    res.status(400).json({
+      success: false,
+      message: 'Error creating pet',
+      error: error.message
+    });
   }
 });
 

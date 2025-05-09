@@ -8,7 +8,7 @@ const petSchema = new mongoose.Schema({
   gender: { type: String, enum: ['Male', 'Female'], required: true },
   location: { type: String, required: true },
   description: { type: String, required: true },
-  profileImage: { type: String, required: true },
+  profileImage: { type: String, default: '/uploads/default-pet.jpg' },
   additionalImages: [{ type: String }],
   userId: { type: String, required: true }
 }, {
