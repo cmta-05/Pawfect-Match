@@ -1,35 +1,3 @@
-// Sample pet data (in a real application, this would come from a backend)
-const pets = [
-    {
-        id: 1,
-        name: "Max",
-        type: "Dog",
-        breed: "Golden Retriever",
-        age: "2 years",
-        location: "New York, NY",
-        description: "Max is a friendly and energetic Golden Retriever who loves playing fetch and going for long walks. He's great with kids and other pets.",
-        images: [
-            "images/pet1.jpg",
-            "images/pet1-2.jpg",
-            "images/pet1-3.jpg"
-        ]
-    },
-    {
-        id: 2,
-        name: "Luna",
-        type: "Dog",
-        breed: "Labrador Retriever",
-        age: "1 year",
-        location: "Los Angeles, CA",
-        description: "Luna is a sweet and playful Labrador who enjoys cuddling and playing with toys. She's house trained and up to date on all vaccinations.",
-        images: [
-            "images/pet2.jpg",
-            "images/pet2-2.jpg",
-            "images/pet2-3.jpg"
-        ]
-    }
-];
-
 // Authentication state
 let isLoggedIn = false;
 
@@ -176,28 +144,8 @@ if (loginForm) {
 
 // Initialize pet modal functionality
 function initializePetModal() {
-    const petImages = document.querySelectorAll('.pet-image');
-    if (!petImages.length) return;
-
-    petImages.forEach(img => {
-        img.addEventListener('click', function() {
-            const petId = parseInt(this.dataset.petId);
-            const pet = pets.find(p => p.id === petId);
-            if (pet) {
-                updatePetModal(pet);
-            }
-        });
-    });
-
-    const thumbnails = document.querySelectorAll('.pet-thumbnail');
-    thumbnails.forEach(thumb => {
-        thumb.addEventListener('click', function() {
-            const mainImage = document.querySelector('.main-pet-image');
-            if (mainImage) {
-                mainImage.src = this.src;
-            }
-        });
-    });
+    // This function should be refactored to fetch pet data from the backend or use the data already loaded on the page.
+    // Remove or comment out any code that references a global pets array.
 }
 
 // Initialize search and filter functionality
@@ -618,7 +566,7 @@ async function renderMyPets() {
         container.innerHTML = userPets.map(pet => `
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
-                    <img src="${pet.images && pet.images[0] ? pet.images[0] : 'images/pet-placeholder1.jpg'}" 
+                    <img src="${pet.profileImage}" 
                          class="card-img-top" 
                          alt="${pet.name}"
                          style="height: 200px; object-fit: cover;">
@@ -626,7 +574,7 @@ async function renderMyPets() {
                         <h5 class="card-title">${pet.name}</h5>
                         <p class="card-text">
                             <strong>Breed:</strong> ${pet.breed}<br>
-                            <strong>Age:</strong> ${pet.age} years<br>
+                            <strong>Age:</strong> ${pet.age}<br>
                             <strong>Gender:</strong> ${pet.gender}<br>
                             <strong>Location:</strong> ${pet.location}
                         </p>
@@ -883,4 +831,40 @@ function handleMultipleImagePreview(input, previewContainer) {
             reader.readAsDataURL(file);
         });
     }
+}
+
+// Handle contact form submission
+const contactForm = document.getElementById('contactForm');
+if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            subject: document.getElementById('subject').value,
+            message: document.getElementById('message').value
+        };
+
+        try {
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert('Message sent successfully!', 'success');
+                contactForm.reset();
+            } else {
+                showAlert(data.message || 'Error sending message', 'error');
+            }
+        } catch (error) {
+            showAlert('Error sending message. Please try again.', 'error');
+        }
+    });
 } 

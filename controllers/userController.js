@@ -58,7 +58,7 @@ exports.getUser = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, status } = req.body;
 
     // Don't allow password updates through this route
     if (req.body.password) {
@@ -67,7 +67,7 @@ exports.updateUser = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email },
+      { name, email, status },
       { new: true, runValidators: true }
     ).select('-password');
 

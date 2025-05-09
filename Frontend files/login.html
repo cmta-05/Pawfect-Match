@@ -191,6 +191,7 @@
                         
                         // Redirect based on user role
                         if (data.user.role === 'admin') {
+                            sessionStorage.setItem('adminLoggedIn', 'true');
                             window.location.href = 'admin-dashboard.html';
                         } else {
                             window.location.href = 'index.html';
@@ -227,7 +228,7 @@
                             name,
                             email,
                             password,
-                            role: 'user' // Default role for new registrations
+                            role: email === 'admin@gmail.com' ? 'admin' : 'user' // Set role based on email
                         })
                     });
 

@@ -36,6 +36,7 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/userRoutes');
 const productRoutes = require('./routes/product');
 const petRoutes = require('./routes/petRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 
 // Middleware
 app.use(logger('dev'));
@@ -51,11 +52,13 @@ app.use(express.static(path.join(__dirname, 'Frontend files/css')));
 app.use(express.static(path.join(__dirname, 'Frontend files/js')));
 app.use(express.static(path.join(__dirname, 'Frontend files/images')));
 app.use(express.static(path.join(__dirname, 'Frontend files/assets')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Routes
 app.use('/product', productRoutes);
 app.use('/users', usersRouter);
 app.use('/api/pets', petRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Serve frontend HTML files
 app.get('/', (req, res) => {
