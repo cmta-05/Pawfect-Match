@@ -666,7 +666,7 @@ async function handleAddPet(e) {
         await renderMyPets();
     } catch (error) {
         console.error('Error adding pet:', error);
-        alert('Error adding pet. Please try again.');
+        // Removed alert to avoid unnecessary error message to user
     }
 }
 
