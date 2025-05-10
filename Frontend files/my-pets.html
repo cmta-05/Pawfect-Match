@@ -260,7 +260,7 @@
                 document.getElementById('dogName').value = pet.name;
                 document.getElementById('breed').value = pet.breed;
                 document.getElementById('age').value = parseFloat(pet.age);
-                document.querySelector(input[name="gender"][value="${pet.gender}"]).checked = true;
+                document.querySelector(`input[name="gender"][value="${pet.gender}"]`).checked = true;
                 document.getElementById('location').value = pet.location;
                 document.getElementById('description').value = pet.description;
 
