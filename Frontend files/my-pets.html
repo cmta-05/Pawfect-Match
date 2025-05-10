@@ -260,7 +260,7 @@
                 document.getElementById('dogName').value = pet.name;
                 document.getElementById('breed').value = pet.breed;
                 document.getElementById('age').value = parseFloat(pet.age);
-                document.querySelector(`input[name="gender"][value="${pet.gender}"]`).checked = true;
+                document.querySelector(input[name="gender"][value="${pet.gender}"]).checked = true;
                 document.getElementById('location').value = pet.location;
                 document.getElementById('description').value = pet.description;
 
@@ -458,7 +458,7 @@
                         });
                           let url, method;
                         if (isEditing && editingPetId) {
-                            url = `http://localhost:3000/api/pets/${editingPetId}`;
+                            url = `http://localhost:3000/api/pets/${editingPetId}/update`;
                             method = 'POST';
                         } else {
                             url = 'http://localhost:3000/api/pets';
