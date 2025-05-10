@@ -98,11 +98,43 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update a pet by ID
-router.put('/:id', async (req, res) => {
+// Update a pet by ID (with image upload support)
+router.put('/:id', upload.fields([
+  { name: 'profileImage', maxCount: 1 },
+  { name: 'additionalImages', maxCount: 3 }
+]), async (req, res) => {
   try {
-    const pet = await Pet.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+     const updateData = req.body;
+     const pet = await Pet.findById(req.params.id);
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
+
+    // Defensive: If gender is an array, take the first value
+    if (Array.isArray(updateData.gender)) {
+      updateData.gender = updateData.gender[0];
+    }
+
+     // Update only provided fields, keep existing for others
+    pet.name = updateData.name || pet.name;
+    pet.type = updateData.type || pet.type;
+    pet.breed = updateData.breed || pet.breed;
+    pet.age = updateData.age || pet.age;
+    pet.gender = updateData.gender || pet.gender;
+    pet.location = updateData.location || pet.location;
+    pet.description = updateData.description || pet.description;
+    pet.userId = updateData.userId || pet.userId;
+
+    // Handle profile image
+    if (req.files && req.files.profileImage) {
+     pet.profileImage = '/uploads/' + req.files.profileImage[0].filename;
+    }
+
+    // Handle additional images
+    if (req.files && req.files.additionalImages) {
+      pet.additionalImages = req.files.additionalImages.map(file => '/uploads/' + file.filename);
+    }
+
+   await pet.save();
+   
     res.json(pet);
   } catch (error) {
     res.status(400).json({ message: error.message });

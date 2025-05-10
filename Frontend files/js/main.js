@@ -547,6 +547,45 @@ async function renderMyPets() {
     const container = document.getElementById('myPetsContainer');
     if (!container) return;
     
+// Centralized pet card renderer
+function renderPetCard(pet) {
+    return `
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="${pet.profileImage}" 
+                     class="card-img-top" 
+                     alt="${pet.name}"
+                     style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">${pet.name}</h5>
+                    <p class="card-text">
+                        <strong>Breed:</strong> ${pet.breed}<br>
+                        <strong>Age:</strong> ${pet.age}<br>
+                        <strong>Gender:</strong> ${pet.gender}<br>
+                        <strong>Location:</strong> ${pet.location}
+                    </p>
+                    <p class="card-text">${pet.description}</p>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn" style="background-color: #FFB031; color: #012312;" onclick="showEditPetForm('${pet._id}')">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </button>
+                        <button class="btn btn-danger" onclick="handleDeletePet('${pet._id}')">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render pets on My Pets page
+async function renderMyPets() {
+    const container = document.getElementById('myPetsContainer');
+    if (!container) return;
+    
     // Fetch from backend instead of localStorage
     try {
         const userId = localStorage.getItem('userId');
@@ -563,36 +602,8 @@ async function renderMyPets() {
             return;
         }
         
-        container.innerHTML = userPets.map(pet => `
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <img src="${pet.profileImage}" 
-                         class="card-img-top" 
-                         alt="${pet.name}"
-                         style="height: 200px; object-fit: cover;">
-                    <div class="card-body">
-                        <h5 class="card-title">${pet.name}</h5>
-                        <p class="card-text">
-                            <strong>Breed:</strong> ${pet.breed}<br>
-                            <strong>Age:</strong> ${pet.age}<br>
-                            <strong>Gender:</strong> ${pet.gender}<br>
-                            <strong>Location:</strong> ${pet.location}
-                        </p>
-                        <p class="card-text">${pet.description}</p>
-                    </div>
-                    <div class="card-footer bg-transparent border-0">
-                        <div class="d-flex justify-content-between">
-                            <button class="btn btn-outline-primary" onclick="showEditPetForm('${pet._id}')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="handleDeletePet('${pet._id}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = userPets.map(renderPetCard).join('');
+
         // Update localStorage for consistency
         localStorage.setItem('userPets', JSON.stringify(userPets));
     } catch (error) {
@@ -706,9 +717,15 @@ window.addEventListener('DOMContentLoaded', () => {
 // Add/Edit Pet Modal
 let editPetModal = null;
 function showEditPetForm(id) {
-    fetch(`/pets/${id}`)
+    fetch(`http://localhost:3000/api/pets/${id}`)
         .then(res => res.json())
         .then(pet => {
+            // Parse age as number for the input
+            let ageValue = pet.age;
+            if (typeof ageValue === 'string') {
+                const match = ageValue.match(/\d+/);
+                ageValue = match ? match[0] : '';
+            }
             // Create modal HTML if not exists
             if (!editPetModal) {
                 editPetModal = document.createElement('div');
@@ -732,7 +749,7 @@ function showEditPetForm(id) {
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Age</label>
-                                <input type="number" class="form-control" name="age" value="${pet.age}" required>
+                                 <input type="number" class="form-control" name="age" value="${ageValue}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Breed</label>
@@ -768,11 +785,18 @@ function showEditPetForm(id) {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const updatedPet = Object.fromEntries(formData.entries());
-                updatedPet.age = Number(updatedPet.age);
+                 updatedPet.age = Number(updatedPet.age); // Ensure age is a number
                 try {
                     await updatePet(id, updatedPet);
                     modal.hide();
-                    renderMyPets();
+                     await renderMyPets();
+                    // Remove modal from DOM after hiding
+                    setTimeout(() => {
+                        if (editPetModal) {
+                            editPetModal.remove();
+                            editPetModal = null;
+                        }
+                    }, 500);
                 } catch (err) {
                     alert('Error updating pet.');
                     console.error(err);
@@ -868,3 +892,4 @@ if (contactForm) {
         }
     });
 } 
+}

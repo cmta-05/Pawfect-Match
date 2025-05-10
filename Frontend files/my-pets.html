@@ -202,6 +202,10 @@
             setTimeout(() => successDiv.remove(), 3000);
         }
 
+        // Add global state for edit mode
+        let isEditing = false;
+        let editingPetId = null;
+
         // Function to delete a pet
         async function deletePet(petId) {
             if (!confirm('Are you sure you want to delete this pet?')) {
@@ -239,6 +243,8 @@
                 }
 
                 const pet = await response.json();
+                isEditing=true;
+                editingPetId = petId;
                 
                 // Show the add pet form
                 const addPetForm = document.getElementById('addPetForm');
@@ -257,6 +263,10 @@
                 document.querySelector(`input[name="gender"][value="${pet.gender}"]`).checked = true;
                 document.getElementById('location').value = pet.location;
                 document.getElementById('description').value = pet.description;
+
+                // Make file upload optional during editing
+                document.getElementById('profileImage').required = false;
+                document.getElementById('additionalImages').required = false;
 
                 // Show current images
                 const imagePreview = document.getElementById('imagePreview');
@@ -277,44 +287,7 @@
                 const submitBtn = addPetForm.querySelector('button[type="submit"]');
                 submitBtn.textContent = 'Save Changes';
 
-                // Update form submission handler
-                const form = document.getElementById('addPetFormElement');
-                form.onsubmit = async function(e) {
-                    e.preventDefault();
-                    showLoading();
-                    
-                    try {
-                        const formData = await getFormData();
-                        
-                        // Send update to backend
-                        const updateResponse = await fetch(`http://localhost:3000/api/pets/${petId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(formData)
-                        });
 
-                        if (!updateResponse.ok) {
-                            throw new Error('Failed to update pet');
-                        }
-
-                        const updatedPet = await updateResponse.json();
-
-                        showSuccess('Pet updated successfully');
-                        
-                        // Reset form and reload pets
-                        form.reset();
-                        addPetForm.style.display = 'none';
-                        if (showAddPetForm) showAddPetForm.style.display = 'block';
-                        loadUserPets();
-                    } catch (error) {
-                        console.error('Error:', error);
-                        showError('Failed to update pet. Please try again.');
-                    } finally {
-                        hideLoading();
-                    }
-                };
             } catch (error) {
                 console.error('Error:', error);
                 showError('Failed to load pet details. Please try again.');
@@ -347,40 +320,41 @@
                         </div>
                     `;
                 } else {
-                    container.innerHTML = pets.map(pet => `
-                        <div class="col-md-4 mb-4">
-                            <div class="card h-100">
-                                <div style="position: relative; padding-top: 100%; overflow: hidden;">
-                                    <img src="${pet.profileImage}" class="card-img-top" alt="${pet.name}" 
-                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">${pet.name}</h5>
-                                    <p class="card-text">
-                                        <i class="fas fa-dog me-2"></i>${pet.breed}<br>
-                                        <i class="fas fa-birthday-cake me-2"></i>${pet.age}<br>
-                                        <i class="fas fa-map-marker-alt me-2"></i>${pet.location}
-                                    </p>
-                                    <p class="card-text">${pet.description}</p>
-                                    ${pet.additionalImages && pet.additionalImages.length > 0 ? `
-                                    <div class="d-flex gap-2 mt-3">
-                                        ${pet.additionalImages.map(img => `
-                                            <img src="${img}" alt="Additional photo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="showFullImage('${img}')">
-                                        `).join('')}
-                                    </div>
-                                    ` : ''}
-                                </div>
-                                <div class="card-footer d-flex justify-content-between">
-                                    <button class="btn" style="background-color: #FFB031; color: #012312;" onclick="editPet('${pet._id}')">
-                                        <i class="fas fa-edit me-2"></i>Edit
-                                    </button>
-                                    <button class="btn btn-danger" onclick="deletePet('${pet._id}')">
-                                        <i class="fas fa-trash me-2"></i>Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
+                    container.innerHTML = pets.map(pet => window.renderPetCard ? window.renderPetCard(pet) : `
+                        <div class=\"col-md-4 mb-4\">\n                            
+                            <div class=\"card h-100\">\n                                
+                                <div style=\"position: relative; padding-top: 100%; overflow: hidden;\">\n                                    
+                                    <img src=\"${pet.profileImage}\" class=\"card-img-top\" alt=\"${pet.name}\" \n                                        
+                                    style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;\">\n                                
+                                    </div>\n                                
+                                    <div class=\"card-body\">\n                                    
+                                        <h5 class=\"card-title\">${pet.name}</h5>\n                                    
+                                        <p class=\"card-text\">\n                                        
+                                            <i class=\"fas fa-dog me-2\"></i>${pet.breed}<br>\n                                        
+                                            <i class=\"fas fa-birthday-cake me-2\"></i>${pet.age}<br>\n                                        
+                                            <i class=\"fas fa-map-marker-alt me-2\"></i>${pet.location}\n                                    
+                                            </p>\n                                    
+                                        <p class=\"card-text\">${pet.description}</p>\n                                    
+                                            ${pet.additionalImages && pet.additionalImages.length > 0 ? `\n                                    
+                                            
+                                            <div class=\"d-flex gap-2 mt-3\">\n                                        
+                                                ${pet.additionalImages.map(img => `\n                                            
+                                                <img src=\"${img}\" alt=\"Additional photo\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;\" onclick=\"showFullImage('${img}')\">\n                                        
+                                                `).join('')}\n                                    
+                                                </div>\n                                    
+                                                ` : ''}\n                                
+                                                </div>\n                                
+                                                <div class=\"card-footer d-flex justify-content-between\">\n                                    
+                                                    <button class=\"btn\" style=\"background-color: #FFB031; color: #012312;\" onclick=\"editPet('${pet._id}')\">\n                                        
+                                                        <i class=\"fas fa-edit me-2\"></i>Edit\n                                    
+                                                        </button>\n                                    
+                                                        <button class=\"btn btn-danger\" onclick=\"deletePet('${pet._id}')\">\n                                        
+                                                            <i class=\"fas fa-trash me-2\"></i>Delete\n                                    
+                                                            </button>\n                                
+                                    </div>\n                            
+                              </div>\n                        
+                         </div>\n                    
+                 `).join('');
                 }
             } catch (error) {
                 console.error('Error loading pets:', error);
@@ -435,6 +409,10 @@
                 showAddPetForm.addEventListener('click', function() {
                     addPetForm.style.display = 'block';
                     showAddPetForm.style.display = 'none';
+                    if (!isEditing) {
+                    isEditing = false; // Reset editing state
+                    editingPetId = null; // Reset editing pet ID
+                    }
                 });
             }
 
@@ -446,61 +424,68 @@
                     showAddPetForm.style.display = 'block';
                     document.getElementById('addPetFormElement').reset();
                     document.getElementById('imagePreview').innerHTML = '';
+                    isEditing = false; // Reset editing state
+                    editingPetId = null; // Reset editing pet ID
                 });
             }
 
-            // Add form submission handler
+            // Add form submission handler ONCE
             const addPetFormElement = document.getElementById('addPetFormElement');
             if (addPetFormElement) {
                 addPetFormElement.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     showLoading();
                     try {
-                        const form = e.target;
-                        const formData = new FormData(form);
+                        const formData = new FormData();
                         formData.append('name', document.getElementById('dogName').value);
-                        formData.append('type', 'Dog');
                         formData.append('breed', document.getElementById('breed').value);
                         formData.append('age', document.getElementById('age').value + ' years');
                         formData.append('gender', document.querySelector('input[name="gender"]:checked')?.value);
                         formData.append('location', document.getElementById('location').value);
                         formData.append('description', document.getElementById('description').value);
                         formData.append('userId', localStorage.getItem('userId'));
-                        // Only append profileImage and additionalImages if files are selected
+                        formData.append('type', 'Dog');
+
+                        // Only append profileImage if a new file is selected
                         const profileImageInput = document.getElementById('profileImage');
                         if (profileImageInput.files[0]) {
                             formData.append('profileImage', profileImageInput.files[0]);
                         }
-                        // Additional images (optional, up to 3)
+                         // Only append additionalImages if new files are selected
                         const additionalImagesInput = document.getElementById('additionalImages');
                         Array.from(additionalImagesInput.files).slice(0, 3).forEach(file => {
                             formData.append('additionalImages', file);
                         });
-                        // Send to backend
-                        const response = await fetch('http://localhost:3000/api/pets', {
-                            method: 'POST',
+                          let url, method;
+                        if (isEditing && editingPetId) {
+                            url = `http://localhost:3000/api/pets/${editingPetId}`;
+                            method = 'POST';
+                        } else {
+                            url = 'http://localhost:3000/api/pets';
+                            method = 'POST';
+                        }
+
+                        const updateResponse = await fetch(url, {
+                            method,
                             body: formData
                         });
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to add pet');
+                         if (!updateResponse.ok) {
+                            throw new Error('Failed to save pet');
                         }
-                        const savedPet = await response.json();
-                        // Reset form and show success message
+                       
+                        showSuccess(isEditing ? 'Pet updated successfully' : 'Pet added successfully');
+                        // Reset to add mode after successful edit
+                        isEditing = false;
+                        editingPetId = null;
                         addPetFormElement.reset();
-                        document.getElementById('profileImagePreview').innerHTML = '';
-                        document.getElementById('additionalImagesPreview').innerHTML = '';
                         document.getElementById('imagePreview').innerHTML = '';
                         addPetForm.style.display = 'none';
-                        showAddPetForm.style.display = 'block';
-                        
-                        showSuccess('Pet added successfully!');
-                        
-                        // Reload pets
+                    
+                          if (showAddPetForm) showAddPetForm.style.display = 'block';
                         loadUserPets();
                     } catch (error) {
                         console.error('Error:', error);
-                        showError(error.message || 'There was an error adding the pet. Please try again.');
+                        showError('Failed to save pet. Please try again.');
                     } finally {
                         hideLoading();
                     }
