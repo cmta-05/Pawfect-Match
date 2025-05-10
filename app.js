@@ -37,6 +37,7 @@ const usersRouter = require('./routes/userRoutes');
 const productRoutes = require('./routes/product');
 const petRoutes = require('./routes/petRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const contactRoutes = require('./routes/contact');
 
 // Middleware
 app.use(logger('dev'));
@@ -59,6 +60,7 @@ app.use('/product', productRoutes);
 app.use('/users', usersRouter);
 app.use('/api/pets', petRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Serve frontend HTML files
 app.get('/', (req, res) => {
