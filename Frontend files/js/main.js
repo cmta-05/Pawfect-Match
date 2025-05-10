@@ -282,14 +282,29 @@ if (sortSelect) {
         petCards.sort((a, b) => {
             const aName = a.querySelector('.card-title').textContent;
             const bName = b.querySelector('.card-title').textContent;
-            const aAge = parseInt(a.querySelector('.card-text').textContent);
-            const bAge = parseInt(b.querySelector('.card-text').textContent);
+            
+            // Extract age values properly
+            const aAgeText = a.querySelector('.card-text').textContent;
+            const bAgeText = b.querySelector('.card-text').textContent;
+            
+            // Extract numeric age values using regex
+            const aAgeMatch = aAgeText.match(/(\d+(?:\.\d+)?)\s*years?/);
+            const bAgeMatch = bAgeText.match(/(\d+(?:\.\d+)?)\s*years?/);
+            
+            const aAge = aAgeMatch ? parseFloat(aAgeMatch[1]) : 0;
+            const bAge = bAgeMatch ? parseFloat(bAgeMatch[1]) : 0;
+            
+            // Extract location values
+            const aLocation = a.querySelector('.card-text:nth-child(3)')?.textContent.replace(/.*marker-alt me-2">/, '').trim() || '';
+            const bLocation = b.querySelector('.card-text:nth-child(3)')?.textContent.replace(/.*marker-alt me-2">/, '').trim() || '';
             
             switch(sortBy) {
                 case 'Name':
                     return aName.localeCompare(bName);
                 case 'Age':
                     return aAge - bAge;
+                case 'Location':
+                    return aLocation.localeCompare(bLocation);
                 default:
                     return 0;
             }

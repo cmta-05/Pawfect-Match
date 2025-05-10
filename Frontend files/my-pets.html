@@ -117,7 +117,7 @@
                         <label for="additionalImages" class="form-label">Additional Photos</label>
                         <input type="file" class="form-control" id="additionalImages" multiple accept="image/*"
                                onchange="handleMultipleImagePreview(this, document.getElementById('additionalImagesPreview'))">
-                        <div class="form-text">Upload up to 3 additional photos of your pet (optional)</div>
+                        <div class="form-text">Upload up to 3 additional pet photos all at once (optional).</div>
                         <div id="additionalImagesPreview" class="mt-2 d-flex gap-2 flex-wrap"></div>
                     </div>
                     <div id="imagePreview" class="mb-3 d-flex gap-2 flex-wrap">
@@ -143,7 +143,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5>Pawfect Match</h5>
-                    <p>Helping pets find their perfect homes since 2024.</p>
+                    <p>Helping pets find their perfect homes since 2025.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p>&copy; 2024 Pawfect Match. All rights reserved.</p>
@@ -314,9 +314,6 @@
                     container.innerHTML = `
                         <div class="col-12 text-center">
                             <p class="lead">You haven't added any pets yet.</p>
-                            <button class="btn" style="background-color: #012312; color: white;" id="showAddPetFormEmpty">
-                                <i class="fas fa-plus me-2"></i>Add Your First Pet
-                            </button>
                         </div>
                     `;
                 } else {
