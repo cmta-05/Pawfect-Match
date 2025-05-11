@@ -34,9 +34,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Routers
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/userRoutes');
-const productRoutes = require('./routes/product');
 const petRoutes = require('./routes/petRoutes');
-const messageRoutes = require('./routes/messageRoutes');
+const contactRoutes = require('./routes/contact');
 
 // Middleware
 app.use(logger('dev'));
@@ -55,10 +54,9 @@ app.use(express.static(path.join(__dirname, 'Frontend files/assets')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Routes
-app.use('/product', productRoutes);
 app.use('/users', usersRouter);
 app.use('/api/pets', petRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Serve frontend HTML files
 app.get('/', (req, res) => {
