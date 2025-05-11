@@ -24,7 +24,7 @@
                 <i class='bx bx-user'></i> Manage Users
             </a>
             <a class="admin-nav-link" href="#pets" data-section="pets">
-                <i class='bx bx-dog'></i> Moderate Pet Profiles
+                <i class='bx bx-shield-quarter'></i> Moderate Pet Profiles
             </a>
             <a class="admin-nav-link" href="#messages" data-section="messages">
                 <i class='bx bx-message'></i> Contacts & Messages
@@ -42,17 +42,13 @@
                 <h2 class="mb-4">User Management</h2>
                 <div class="admin-card admin-stats-card mb-4 p-3">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <h4>Total Users</h4>
                             <h2>1,234</h2>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <h4>Active Users</h4>
                             <h2>1,100</h2>
-                        </div>
-                        <div class="col-md-4">
-                            <h4>Blocked Users</h4>
-                            <h2>134</h2>
                         </div>
                     </div>
                 </div>
@@ -280,11 +276,9 @@
             // Update stats
             const totalUsers = users.length;
             const activeUsers = users.filter(user => (user.status || 'active') === 'active').length;
-            const blockedUsers = users.filter(user => user.status === 'blocked').length;
 
-            document.querySelector('#users .col-md-4:nth-child(1) h2').textContent = totalUsers;
-            document.querySelector('#users .col-md-4:nth-child(2) h2').textContent = activeUsers;
-            document.querySelector('#users .col-md-4:nth-child(3) h2').textContent = blockedUsers;
+            document.querySelector('#users .col-md-6:nth-child(1) h2').textContent = totalUsers;
+            document.querySelector('#users .col-md-6:nth-child(2) h2').textContent = activeUsers;
 
             // Populate table
             users.forEach(user => {
