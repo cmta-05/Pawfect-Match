@@ -16,46 +16,103 @@
         if (!sessionStorage.getItem('adminLoggedIn') || !localStorage.getItem('token')) {
             window.location.href = 'login.html';
         }
+
+        // Logout function
+        function logout() {
+            if (!confirm('Are you sure you want to log out?')) return;
+            // Clear all auth data
+            sessionStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = 'login.html';
+        }
     </script>
     <div class="admin-sidebar">
-        <h3 class="mb-4 text-center">Pawfect Match Admin</h3>
+        <div class="sidebar-header">
+            <img src="images/pawfect-logo.png" alt="Pawfect Logo" class="admin-logo">
+            <h3>Pawfect Match</h3>
+        </div>
         <nav class="nav flex-column">
-            <a class="admin-nav-link active" href="#users" data-section="users">
-                <i class='bx bx-user'></i> Manage Users
+            <a class="admin-nav-link active" href="#users" data-section="users" title="Manage Users">
+                <i class='bx bx-user'></i> <span>Manage Users</span>
             </a>
-            <a class="admin-nav-link" href="#pets" data-section="pets">
-                <i class='bx bx-shield-quarter'></i> Moderate Pet Profiles
+            <a class="admin-nav-link" href="#pets" data-section="pets" title="Moderate Pet Profiles">
+                <i class='bx bx-shield-quarter'></i> <span>Moderate Pet Profiles</span>
             </a>
-            <a class="admin-nav-link" href="#messages" data-section="messages">
-                <i class='bx bx-message'></i> Contacts & Messages
+            <a class="admin-nav-link" href="#messages" data-section="messages" title="Contacts & Messages">
+                <i class='bx bx-message'></i> <span>Contacts & Messages</span>
             </a>
-            <a class="admin-nav-link" href="#reports" data-section="reports">
-                <i class='bx bx-line-chart'></i> Reports & Analytics
+            <a class="admin-nav-link" href="login.html" onclick="logout()" title="Logout">
+                <i class='bx bx-log-out'></i> <span>Logout</span>
             </a>
+            <div class="admin-sidebar-info">
+                <div class="admin-sidebar-welcome">Welcome, Admin!</div>
+                <div class="admin-sidebar-date" id="sidebarDate"></div>
+                <div class="admin-sidebar-tip">
+                    <i class='bx bx-bulb'></i> Tip: Review new pet profiles daily to keep the platform safe and fun!
+                </div>
+            </div>
+            <div class="admin-sidebar-footer">
+                <div class="admin-sidebar-about">
+                    <strong>Pawfect Match</strong> is dedicated to connecting pets with loving homes. Thank you for helping us keep the community safe and happy!
+                </div>
+            </div>
         </nav>
     </div>
 
     <div class="admin-main-content">
+        <div class="admin-header">
+            <div class="header-content">
+                <h2 id="currentSection">Admin Dashboard</h2>
+                <div class="admin-profile">
+                    <span class="admin-name">Admin User</span>
+                    <img src="images/admin-avatar.png" alt="Admin" class="admin-avatar">
+                </div>
+            </div>
+        </div>
         <div id="content">
             <!-- Users Section -->
             <div id="users" class="active">
-                <h2 class="mb-4">User Management</h2>
-                <div class="admin-card admin-stats-card mb-4 p-3">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h4>Total Users</h4>
-                            <h2>1,234</h2>
+                <div class="section-label">
+                    <i class='bx bx-user-circle'></i>
+                    <span>User Management</span>
+                </div>
+                <div class="section-desc">View, search, and manage all registered users. Delete users if necessary to keep the platform safe and active.</div>
+                <div class="admin-card admin-stats-card mb-4">
+                    <div class="row g-0">
+                        <div class="col-md-6 stat-box">
+                            <div class="stat-content">
+                                <i class='bx bx-user-circle stat-icon'></i>
+                                <div>
+                                    <h4>Total Users</h4>
+                                    <h2>1,234</h2>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h4>Active Users</h4>
-                            <h2>1,100</h2>
+                        <div class="col-md-6 stat-box">
+                            <div class="stat-content">
+                                <i class='bx bx-user-check stat-icon'></i>
+                                <div>
+                                    <h4>Active Users</h4>
+                                    <h2>1,100</h2>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="admin-card">
+                    <div class="card-header">
+                        <h4>User List</h4>
+                        <div class="header-actions">
+                            <input type="text" class="form-control search-input" placeholder="Search users...">
+                        </div>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table">
+                            <table class="table admin-table">
                                 <thead>
                                     <tr>
                                         <th>User ID</th>
@@ -76,7 +133,11 @@
 
             <!-- Pets Section -->
             <div id="pets">
-                <h2 class="mb-4">Pet Profile Moderation</h2>
+                <div class="section-label">
+                    <i class='bx bx-shield-quarter'></i>
+                    <span>Pet Profile Moderation</span>
+                </div>
+                <div class="section-desc">Review and moderate all pet profiles submitted to the platform. Ensure all pet information is accurate and appropriate.</div>
                 <div class="admin-card admin-stats-card mb-4 p-3">
                     <div class="row">
                         <div class="col-md-4">
@@ -111,7 +172,11 @@
 
             <!-- Messages Section -->
             <div id="messages">
-                <h2 class="mb-4">Contacts & Messages</h2>
+                <div class="section-label">
+                    <i class='bx bx-message'></i>
+                    <span>Contacts & Messages</span>
+                </div>
+                <div class="section-desc">View messages or inquiries sent by users. Stay informed and monitor user concerns in a timely manner.</div>
                 <div class="admin-card admin-stats-card mb-4 p-3">
                     <div class="row">
                         <div class="col-md-4">
@@ -136,51 +201,6 @@
                                     <!-- Message data will be populated here -->
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports Section -->
-            <div id="reports">
-                <h2 class="mb-4">Reports & Analytics</h2>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="admin-card mb-4">
-                            <div class="card-body">
-                                <h4>User Statistics</h4>
-                                <canvas id="userChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="admin-card mb-4">
-                            <div class="card-body">
-                                <h4>Pet Profile Statistics</h4>
-                                <canvas id="petChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-card">
-                    <div class="card-body">
-                        <h4>Export Reports</h4>
-                        <div class="row mt-3">
-                            <div class="col-md-4">
-                                <button class="btn admin-action-btn w-100" onclick="exportReport('users')">
-                                    Export User Report
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn admin-action-btn w-100" onclick="exportReport('pets')">
-                                    Export Pet Statistics
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn admin-action-btn w-100" onclick="exportReport('complaints')">
-                                    Export Complaint Report
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -270,16 +290,19 @@
         // Function to populate user data
         async function populateUserData() {
             const users = await fetchUsers();
+            window._allUsers = users; // Store for search
+            renderUserTable(users);
+        }
+
+        // Function to render user table
+        function renderUserTable(users) {
             const userTableBody = document.getElementById('userTableBody');
             userTableBody.innerHTML = '';
-
             // Update stats
             const totalUsers = users.length;
             const activeUsers = users.filter(user => (user.status || 'active') === 'active').length;
-
             document.querySelector('#users .col-md-6:nth-child(1) h2').textContent = totalUsers;
             document.querySelector('#users .col-md-6:nth-child(2) h2').textContent = activeUsers;
-
             // Populate table
             users.forEach(user => {
                 const status = user.status || 'active';
@@ -297,6 +320,21 @@
                 userTableBody.innerHTML += row;
             });
         }
+
+        // Search users functionality
+        document.querySelector('.search-input').addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            const users = window._allUsers || [];
+            if (!query) {
+                renderUserTable(users);
+                return;
+            }
+            const filtered = users.filter(user =>
+                (user.name && user.name.toLowerCase().includes(query)) ||
+                (user.email && user.email.toLowerCase().includes(query))
+            );
+            renderUserTable(filtered);
+        });
 
         // Event delegation for delete only
         document.getElementById('userTableBody').addEventListener('click', async function(e) {
@@ -329,29 +367,35 @@
 
         // Populate pets table in admin dashboard
         async function populatePetData() {
-            const pets = await fetchPets();
             const petTableBody = document.getElementById('petTableBody');
-            petTableBody.innerHTML = '';
-
-            const totalPetsCountElem = document.getElementById('totalPetsCount');
-            if (totalPetsCountElem) {
-                totalPetsCountElem.textContent = pets.length;
+            petTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #888;"><div class="spinner-border text-warning" role="status" style="width:2.5rem;height:2.5rem;"></div><div>Loading pets...</div></td></tr>';
+            try {
+                const pets = await fetchPets();
+                petTableBody.innerHTML = '';
+                const totalPetsCountElem = document.getElementById('totalPetsCount');
+                if (totalPetsCountElem) {
+                    totalPetsCountElem.textContent = pets.length;
+                }
+                pets.forEach(pet => {
+                    const row = `
+                        <tr>
+                            <td>${pet._id}</td>
+                            <td>${pet.name}</td>
+                            <td>${pet.type}</td>
+                            <td>${pet.breed}</td>
+                            <td>${pet.age}</td>
+                            <td>${pet.gender}</td>
+                            <td>${pet.location}</td>
+                        </tr>
+                    `;
+                    petTableBody.innerHTML += row;
+                });
+                if (pets.length === 0) {
+                    petTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #888;">No pets found.</td></tr>';
+                }
+            } catch (error) {
+                petTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #d9534f;">Failed to load pets. Please try again.</td></tr>';
             }
-
-            pets.forEach(pet => {
-                const row = `
-                    <tr>
-                        <td>${pet._id}</td>
-                        <td>${pet.name}</td>
-                        <td>${pet.type}</td>
-                        <td>${pet.breed}</td>
-                        <td>${pet.age}</td>
-                        <td>${pet.gender}</td>
-                        <td>${pet.location}</td>
-                    </tr>
-                `;
-                petTableBody.innerHTML += row;
-            });
         }
 
           // Function to load contact messages
@@ -401,29 +445,17 @@
 
         // Add logout functionality
         document.addEventListener('DOMContentLoaded', async () => {
-            // Add logout button to sidebar
-            const sidebar = document.querySelector('.admin-sidebar');
-            const logoutBtn = document.createElement('a');
-            logoutBtn.className = 'admin-nav-link';
-            logoutBtn.innerHTML = '<i class="bx bx-log-out"></i> Logout';
-            logoutBtn.style.marginTop = 'auto';
-            logoutBtn.style.cursor = 'pointer';
-            logoutBtn.onclick = function() {
-                // Clear all auth data
-                sessionStorage.removeItem('adminLoggedIn');
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userName');
-                localStorage.removeItem('userEmail');
-                localStorage.removeItem('isLoggedIn');
-                window.location.href = 'login.html';
-            };
-            sidebar.appendChild(logoutBtn);
-
             // Initial data load
             await populateUserData();
             await populatePetData();
         });
+
+        // Set today's date in the sidebar
+        const sidebarDate = document.getElementById('sidebarDate');
+        if (sidebarDate) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            sidebarDate.textContent = new Date().toLocaleDateString(undefined, options);
+        }
     </script>
 </body>
 </html> 
