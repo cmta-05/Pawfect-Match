@@ -115,13 +115,6 @@
                         <div class="form-text">This will be the main photo shown in the pet listing</div>
                         <div id="profileImagePreview" class="mt-2 d-flex gap-2 flex-wrap"></div>
                     </div>
-                    <div class="mb-3">
-                        <label for="additionalImages" class="form-label">Additional Photos</label>
-                        <input type="file" class="form-control" id="additionalImages" multiple accept="image/*"
-                               onchange="handleMultipleImagePreview(this, document.getElementById('additionalImagesPreview'))">
-                        <div class="form-text">Upload up to 3 additional pet photos all at once (optional).</div>
-                        <div id="additionalImagesPreview" class="mt-2 d-flex gap-2 flex-wrap"></div>
-                    </div>
                     <div id="imagePreview" class="mb-3 d-flex gap-2 flex-wrap">
                         <!-- Image previews will be shown here -->
                     </div>
@@ -268,7 +261,6 @@
 
                 // Make file upload optional during editing
                 document.getElementById('profileImage').required = false;
-                document.getElementById('additionalImages').required = false;
 
                 // Show current images
                 const imagePreview = document.getElementById('imagePreview');
@@ -277,12 +269,6 @@
                         <img src="${pet.profileImage}" alt="Profile Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
                         <span class="badge bg-primary position-absolute top-0 start-0 m-2">Current Profile</span>
                     </div>
-                    ${pet.additionalImages ? pet.additionalImages.map(img => `
-                        <div class="position-relative">
-                            <img src="${img}" alt="Additional Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
-                            <span class="badge bg-secondary position-absolute top-0 start-0 m-2">Current Additional</span>
-                        </div>
-                    `).join('') : ''}
                 `;
 
                 // Update the form submit button
@@ -333,23 +319,15 @@
                                             <i class=\"fas fa-birthday-cake me-2\"></i>${pet.age}<br>\n                                        
                                             <i class=\"fas fa-map-marker-alt me-2\"></i>${pet.location}\n                                    
                                             </p>\n                                    
-                                        <p class=\"card-text\">${pet.description}</p>\n                                    
-                                            ${pet.additionalImages && pet.additionalImages.length > 0 ? `\n                                    
-                                            
-                                            <div class=\"d-flex gap-2 mt-3\">\n                                        
-                                                ${pet.additionalImages.map(img => `\n                                            
-                                                <img src=\"${img}\" alt=\"Additional photo\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;\" onclick=\"showFullImage('${img}')\">\n                                        
-                                                `).join('')}\n                                    
-                                                </div>\n                                    
-                                                ` : ''}\n                                
-                                                </div>\n                                
-                                                <div class=\"card-footer d-flex justify-content-between\">\n                                    
-                                                    <button class=\"btn\" style=\"background-color: #FFB031; color: #012312;\" onclick=\"editPet('${pet._id}')\">\n                                        
-                                                        <i class=\"fas fa-edit me-2\"></i>Edit\n                                    
-                                                        </button>\n                                    
-                                                        <button class=\"btn btn-danger\" onclick=\"deletePet('${pet._id}')\">\n                                        
-                                                            <i class=\"fas fa-trash me-2\"></i>Delete\n                                    
-                                                            </button>\n                                
+                                        <p class=\"card-text\">${pet.description}</p>\n                                
+                                    </div>\n                                
+                                    <div class=\"card-footer d-flex justify-content-between\">\n                                    
+                                        <button class=\"btn\" style=\"background-color: #FFB031; color: #012312;\" onclick=\"editPet('${pet._id}')\">\n                                        
+                                            <i class=\"fas fa-edit me-2\"></i>Edit\n                                    
+                                        </button>\n                                    
+                                        <button class=\"btn btn-danger\" onclick=\"deletePet('${pet._id}')\">\n                                        
+                                            <i class=\"fas fa-trash me-2\"></i>Delete\n                                    
+                                        </button>\n                                
                                     </div>\n                            
                               </div>\n                        
                          </div>\n                    
@@ -450,11 +428,6 @@
                         if (profileImageInput.files[0]) {
                             formData.append('profileImage', profileImageInput.files[0]);
                         }
-                         // Only append additionalImages if new files are selected
-                        const additionalImagesInput = document.getElementById('additionalImages');
-                        Array.from(additionalImagesInput.files).slice(0, 3).forEach(file => {
-                            formData.append('additionalImages', file);
-                        });
                           let url, method;
                         if (isEditing && editingPetId) {
                             url = `http://localhost:3000/api/pets/${editingPetId}/update`;
@@ -504,26 +477,6 @@
                     `;
                 };
                 reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // Function to handle multiple image preview
-        function handleMultipleImagePreview(input, previewContainer) {
-            if (input.files && input.files.length > 0) {
-                previewContainer.innerHTML = '';
-                const files = Array.from(input.files).slice(0, 3);
-                files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const imgContainer = document.createElement('div');
-                        imgContainer.className = 'position-relative';
-                        imgContainer.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
-                        `;
-                        previewContainer.appendChild(imgContainer);
-                    };
-                    reader.readAsDataURL(file);
-                });
             }
         }
     </script>

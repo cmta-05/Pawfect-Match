@@ -562,45 +562,6 @@ async function renderMyPets() {
     const container = document.getElementById('myPetsContainer');
     if (!container) return;
     
-// Centralized pet card renderer
-function renderPetCard(pet) {
-    return `
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <img src="${pet.profileImage}" 
-                     class="card-img-top" 
-                     alt="${pet.name}"
-                     style="height: 200px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">${pet.name}</h5>
-                    <p class="card-text">
-                        <strong>Breed:</strong> ${pet.breed}<br>
-                        <strong>Age:</strong> ${pet.age}<br>
-                        <strong>Gender:</strong> ${pet.gender}<br>
-                        <strong>Location:</strong> ${pet.location}
-                    </p>
-                    <p class="card-text">${pet.description}</p>
-                </div>
-                <div class="card-footer bg-transparent border-0">
-                    <div class="d-flex justify-content-between">
-                        <button class="btn" style="background-color: #FFB031; color: #012312;" onclick="showEditPetForm('${pet._id}')">
-                            <i class="fas fa-edit me-2"></i>Edit
-                        </button>
-                        <button class="btn btn-danger" onclick="handleDeletePet('${pet._id}')">
-                            <i class="fas fa-trash me-2"></i>Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Render pets on My Pets page
-async function renderMyPets() {
-    const container = document.getElementById('myPetsContainer');
-    if (!container) return;
-    
     // Fetch from backend instead of localStorage
     try {
         const userId = localStorage.getItem('userId');
@@ -627,6 +588,48 @@ async function renderMyPets() {
     }
 }
 
+// Centralized pet card renderer
+function renderPetCard(pet) {
+    // Only show the Edit button for My Pets if not on browse.html
+    const currentPage = window.location.pathname.split('/').pop();
+    const editButton = currentPage === 'my-pets.html'
+        ? `<button class="btn" style="background-color: #FFB031; color: #012312;" onclick="editPet('${pet._id}')">
+                <i class="fas fa-edit me-2"></i>Edit
+           </button>`
+        : '';
+    const deleteButton = currentPage === 'my-pets.html'
+        ? `<button class="btn btn-danger" onclick="handleDeletePet('${pet._id}')">
+                <i class="fas fa-trash me-2"></i>Delete
+           </button>`
+        : '';
+    return `
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="${pet.profileImage}" 
+                     class="card-img-top" 
+                     alt="${pet.name}"
+                     style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">${pet.name}</h5>
+                    <p class="card-text">
+                        <strong>Breed:</strong> ${pet.breed}<br>
+                        <strong>Age:</strong> ${pet.age}<br>
+                        <strong>Gender:</strong> ${pet.gender}<br>
+                        <strong>Location:</strong> ${pet.location}
+                    </p>
+                    <p class="card-text">${pet.description}</p>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <div class="d-flex justify-content-between">
+                        ${editButton}
+                        ${deleteButton}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 // Add event listeners for add/edit/delete
 async function handleAddPet(e) {
     e.preventDefault();
@@ -638,11 +641,10 @@ async function handleAddPet(e) {
     const location = document.getElementById('location').value;
     const description = document.getElementById('description').value;
     
-    // Handle image uploads
+    // Handle image upload
     const profileImage = document.getElementById('profileImage').files[0];
-    const additionalImages = document.getElementById('additionalImages').files;
     
-    // Convert images to base64
+    // Convert image to base64
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -654,13 +656,6 @@ async function handleAddPet(e) {
     
     try {
         const profileImageBase64 = profileImage ? await getBase64(profileImage) : null;
-        const additionalImagesBase64 = [];
-        
-        // Convert additional images to base64 (max 3)
-        for (let i = 0; i < Math.min(additionalImages.length, 3); i++) {
-            const base64 = await getBase64(additionalImages[i]);
-            additionalImagesBase64.push(base64);
-        }
         
         const petData = {
             name,
@@ -669,7 +664,7 @@ async function handleAddPet(e) {
             gender,
             location,
             description,
-            images: [profileImageBase64, ...additionalImagesBase64].filter(Boolean),
+            images: [profileImageBase64].filter(Boolean),
             userId: localStorage.getItem('userId')
         };
         
@@ -699,14 +694,18 @@ async function handleAddPet(e) {
 async function handleDeletePet(id) {
     if (confirm('Are you sure you want to delete this pet?')) {
         try {
-            const result = await deletePet(id);
-            if (result && result.message === 'Pet deleted successfully') {
-                // After deletion, re-fetch and render pets
-                await renderMyPets();
-            } else {
-                alert('Failed to delete pet: ' + (result.message || 'Unknown error'));
-                console.error('Delete response:', result);
+            const response = await fetch(`http://localhost:3000/api/pets/${id}`, { method: 'DELETE' });
+            if (!response.ok) {
+                let errorMsg = 'Failed to delete pet.';
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorMsg;
+                } catch {}
+                alert(errorMsg);
+                return;
             }
+            // Success: refresh pets
+            await renderMyPets();
         } catch (err) {
             alert('Error deleting pet. See console for details.');
             console.error('Delete error:', err);
@@ -823,7 +822,7 @@ function showEditPetForm(id) {
             console.error(err);
         });
 }
-window.showEditPetForm = showEditPetForm;
+window.showEditPetForm = function(){}; // Disable modal edit for my-pets.html
 
 // Handle image preview
 function handleImagePreview(input, previewContainer) {
@@ -906,5 +905,4 @@ if (contactForm) {
             showAlert('Error sending message. Please try again.', 'error');
         }
     });
-} 
 }

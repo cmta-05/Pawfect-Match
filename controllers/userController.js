@@ -1,6 +1,7 @@
-const User = require('../models/user');
+const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Pet = require('../models/Pet');
 
 // Create user
 exports.createUser = async (req, res) => {
@@ -93,6 +94,8 @@ exports.deleteUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    // Also delete all pets belonging to this user
+    await Pet.deleteMany({ userId: user._id.toString() });
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     if (error.name === 'CastError') {

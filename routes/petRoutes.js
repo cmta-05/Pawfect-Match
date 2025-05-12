@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Pet = require('../models/Pet');
+const User = require('../models/User');
 
 // Multer setup for image uploads
 const multer = require('multer');
@@ -81,6 +82,14 @@ router.get('/', async (req, res) => {
     } else {
       pets = await Pet.find();
     }
+    // Clean up pets with non-existent or inactive users
+    const users = await User.find({ status: 'active' }, '_id');
+    const userIds = new Set(users.map(u => String(u._id)));
+    const orphanedPets = pets.filter(pet => !userIds.has(String(pet.userId)));
+    if (orphanedPets.length > 0) {
+      await Pet.deleteMany({ _id: { $in: orphanedPets.map(p => p._id) } });
+      pets = pets.filter(pet => userIds.has(String(pet.userId)));
+    }
     res.json(pets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -99,10 +108,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a pet by ID (with image upload support)
-router.post('/:id/update', upload.fields([
-  { name: 'profileImage', maxCount: 1 },
-  { name: 'additionalImages', maxCount: 3 }
-]), async (req, res) => {
+router.post('/:id/update', upload.single('profileImage'), async (req, res) => {
   try {
      const updateData = req.body;
      const pet = await Pet.findById(req.params.id);
@@ -124,13 +130,8 @@ router.post('/:id/update', upload.fields([
     pet.userId = updateData.userId || pet.userId;
 
     // Handle profile image
-    if (req.files && req.files.profileImage) {
-     pet.profileImage = '/uploads/' + req.files.profileImage[0].filename;
-    }
-
-    // Handle additional images
-    if (req.files && req.files.additionalImages) {
-      pet.additionalImages = req.files.additionalImages.map(file => '/uploads/' + file.filename);
+    if (req.file) {
+     pet.profileImage = '/uploads/' + req.file.filename;
     }
 
    await pet.save();
@@ -142,10 +143,7 @@ router.post('/:id/update', upload.fields([
 });
 
 // Update a pet by ID (with image upload support)
-router.put('/:id', upload.fields([
-  { name: 'profileImage', maxCount: 1 },
-  { name: 'additionalImages', maxCount: 3 }
-]), async (req, res) => {
+router.put('/:id', upload.single('profileImage'), async (req, res) => {
   try {
     const updateData = req.body;
     const pet = await Pet.findById(req.params.id);
@@ -167,13 +165,8 @@ router.put('/:id', upload.fields([
     pet.userId = updateData.userId || pet.userId;
 
     // Handle profile image
-    if (req.files && req.files.profileImage) {
-      pet.profileImage = '/uploads/' + req.files.profileImage[0].filename;
-    }
-
-    // Handle additional images
-    if (req.files && req.files.additionalImages) {
-      pet.additionalImages = req.files.additionalImages.map(file => '/uploads/' + file.filename);
+    if (req.file) {
+      pet.profileImage = '/uploads/' + req.file.filename;
     }
 
     await pet.save();
