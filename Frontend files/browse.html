@@ -131,17 +131,24 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <div class="d-flex gap-2">
                         <div class="match-request-container">
-                            <button type="button" class="btn btn-success" onclick="showMatchRequestForm()">
+                            <button type="button" class="btn" style="background-color: #012312; color: white;" onclick="showMatchRequestForm()">
                                 <i class="fas fa-heart me-2"></i>Send Match Request
                             </button>
-                            <div id="matchRequestForm" class="mt-2" style="display: none;">
-                                <select class="form-select mb-2" id="userPetSelect">
+                            <div id="matchRequestForm" class="mt-3 p-3 border rounded" style="display: none; background-color: #f8f9fa;">
+                                <h6 class="mb-3">Send a Match Request</h6>
+                                <select class="form-select mb-3" id="userPetSelect">
                                     <option value="">Select your pet</option>
                                 </select>
-                                <textarea class="form-control mb-2" id="matchMessage" rows="2" placeholder="Add a message (optional)"></textarea>
+                                <textarea class="form-control mb-3" id="matchMessage" rows="3" 
+                                    placeholder="Add a message to introduce your pet (optional)"></textarea>
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="cancelMatchRequest()">Cancel</button>
-                                    <button type="button" class="btn btn-success btn-sm" onclick="submitMatchRequest()">Send Request</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cancelMatchRequest()">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                    <button type="button" class="btn btn-sm" style="background-color: #012312; color: white;" 
+                                        onclick="submitMatchRequest()" id="submitMatchBtn">
+                                        <i class="fas fa-paper-plane me-1"></i>Send Request
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -269,23 +276,37 @@
             const select = document.getElementById('userPetSelect');
             select.innerHTML = '<option value="">Select your pet</option>';
             userPets.forEach(pet => {
-                select.innerHTML += `<option value="${pet.id}">${pet.name} (${pet.breed})</option>`;
+                select.innerHTML += `<option value="${pet._id || pet.id}">${pet.name} (${pet.breed})</option>`;
             });
 
-            // Show the match request form
-            document.getElementById('matchRequestForm').style.display = 'block';
+            // Show the match request form with animation
+            const form = document.getElementById('matchRequestForm');
+            form.style.display = 'block';
+            form.style.opacity = '0';
+            form.style.transform = 'translateY(-10px)';
+            form.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                form.style.opacity = '1';
+                form.style.transform = 'translateY(0)';
+            }, 10);
         }
 
         function cancelMatchRequest() {
-            document.getElementById('matchRequestForm').style.display = 'none';
-            document.getElementById('userPetSelect').value = '';
-            document.getElementById('matchMessage').value = '';
+            const form = document.getElementById('matchRequestForm');
+            form.style.opacity = '0';
+            form.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                form.style.display = 'none';
+                document.getElementById('userPetSelect').value = '';
+                document.getElementById('matchMessage').value = '';
+            }, 300);
         }
 
-        function submitMatchRequest() {
+        async function submitMatchRequest() {
             // Double check authentication before submitting
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' && document.querySelector('#userProfileContainer').style.display !== 'none';
-            
             if (!isLoggedIn) {
                 const loginPrompt = confirm('Your session has expired. Please log in again to send match requests. Would you like to log in now?');
                 if (loginPrompt) {
@@ -296,31 +317,90 @@
 
             const userPetId = document.getElementById('userPetSelect').value;
             const message = document.getElementById('matchMessage').value;
+            const submitBtn = document.getElementById('submitMatchBtn');
 
             if (!userPetId) {
                 alert('Please select one of your pets to send a match request.');
                 return;
             }
 
-            // Store match request in localStorage
-            const matchRequests = JSON.parse(localStorage.getItem('matchRequests') || '[]');
-            matchRequests.push({
-                id: Date.now(),
-                userPetId: userPetId,
-                targetPetId: selectedPetId,
-                message: message,
-                status: 'pending',
-                timestamp: new Date().toISOString(),
-                read: false
-            });
-            localStorage.setItem('matchRequests', JSON.stringify(matchRequests));
+            // Find sender (current user) and senderPet
+            const userId = localStorage.getItem('userId');
+            const userPets = JSON.parse(localStorage.getItem('userPets') || '[]');
+            const senderPet = userPets.find(p => String(p._id || p.id) === String(userPetId));
+            if (!senderPet) {
+                alert('Could not find your selected pet.');
+                return;
+            }
 
-            // Hide the form and show success message
-            cancelMatchRequest();
-            alert('Match request sent successfully!');
-            
-            // Update the UI to show new notification
-            updateAuthUI(true);
+            // Find receiverPet and receiver (target pet and its owner)
+            let allPets = [];
+            try {
+                const petsRes = await fetch('/api/pets');
+                allPets = await petsRes.json();
+                localStorage.setItem('pets', JSON.stringify(allPets));
+            } catch (e) {
+                allPets = JSON.parse(localStorage.getItem('pets') || '[]');
+            }
+            const receiverPet = allPets.find(p => String(p._id || p.id) === String(window.selectedPetId));
+            if (!receiverPet) {
+                alert('Could not find the target pet.');
+                return;
+            }
+            const receiverId = receiverPet.userId;
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+            // Prepare payload
+            const payload = {
+                sender: userId,
+                senderPet: senderPet._id || senderPet.id,
+                receiver: receiverId,
+                receiverPet: receiverPet._id || receiverPet.id,
+                message
+            };
+
+            try {
+                const response = await fetch('/api/match-requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to send match request');
+                }
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Request';
+                cancelMatchRequest();
+                // Show success toast
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed bottom-0 end-0 p-3';
+                toast.style.zIndex = '5';
+                toast.innerHTML = `
+                    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header" style="background-color: #012312; color: white;">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong class="me-auto">Success</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            Match request sent successfully!
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => { toast.remove(); }, 3000);
+                updateAuthUI(true);
+            } catch (error) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Request';
+                alert(error.message || 'Failed to send match request.');
+                console.error('Match request error:', error);
+            }
         }
 
         function updatePetModal(pet) {
@@ -441,6 +521,15 @@
                 icon.classList.add('fas');
                 btn.style.backgroundColor = '#012312';
                 btn.style.color = 'white';
+            }
+        }
+
+        function sendMatchRequest(petId) {
+            window.selectedPetId = petId;
+            const form = document.getElementById('matchRequestForm');
+            if (form) {
+                form.style.display = 'block';
+                // Optionally, populate the select with user's pets
             }
         }
 

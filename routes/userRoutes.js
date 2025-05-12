@@ -6,6 +6,7 @@ const { protect, authorize } = require('../middleware/auth');
 // Public routes
 router.post('/login', userController.loginUser);
 router.post('/', userController.createUser);
+router.get('/email/:email', userController.getUserByEmail);
 
 // Protected routes
 router.get('/', protect, authorize('admin'), userController.getUsers);

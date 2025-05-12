@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Handle login form submission
 const loginForm = document.querySelector('#loginModal form');
 if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -110,16 +110,24 @@ if (loginForm) {
         if (email && password) {
             // Set authentication state
             localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userId', email);
+            // Fetch user by email to get MongoDB _id
+            try {
+                const response = await fetch(`/users/email/${encodeURIComponent(email)}`);
+                if (!response.ok) throw new Error('User not found');
+                const user = await response.json();
+                localStorage.setItem('userId', user._id);
+                localStorage.setItem('userName', user.name);
+                localStorage.setItem('userEmail', user.email);
+            } catch (err) {
+                alert('Login failed: ' + err.message);
+                return;
+            }
             isLoggedIn = true;
-            
             // Initialize empty match requests if not exists
             if (!localStorage.getItem('matchRequests')) {
                 localStorage.setItem('matchRequests', '[]');
             }
-            
             updateAuthUI(true);
-            
             const modal = document.getElementById('loginModal');
             if (modal) {
                 const bsModal = bootstrap.Modal.getInstance(modal);
@@ -127,9 +135,7 @@ if (loginForm) {
                     bsModal.hide();
                 }
             }
-            
             loginForm.reset();
-
             // Check for redirect parameter
             const urlParams = new URLSearchParams(window.location.search);
             const redirect = urlParams.get('redirect');
@@ -252,7 +258,20 @@ function sendMatchRequest(petId) {
     if (!isLoggedIn) {
         return;
     }
-    alert('Match request sent! The pet owner will contact you soon.');
+    // Set the selected pet globally
+    window.selectedPetId = petId;
+    // Show the match request form (if exists)
+    const form = document.getElementById('matchRequestForm');
+    if (form) {
+        form.style.display = 'block';
+        form.style.opacity = '1';
+        form.style.transform = 'translateY(0)';
+        // Optionally focus the first input
+        const select = document.getElementById('userPetSelect');
+        if (select) select.focus();
+    } else {
+        alert('Match request form not found on this page.');
+    }
 }
 
 // Handle favorite pet
@@ -420,106 +439,227 @@ function toggleFavorite(petId) {
     }
 }
 
-// Function to show match requests modal
-function showMatchRequests() {
-    // Create modal if it doesn't exist
-    let matchModal = document.getElementById('matchRequestsModal');
-    if (!matchModal) {
-        matchModal = document.createElement('div');
-        matchModal.id = 'matchRequestsModal';
-        matchModal.className = 'modal fade';
-        matchModal.setAttribute('tabindex', '-1');
-        
-        const matchRequests = JSON.parse(localStorage.getItem('matchRequests') || '[]');
-        const userPets = JSON.parse(localStorage.getItem('userPets') || '[]');
-        const pets = JSON.parse(localStorage.getItem('pets') || '[]');
-        
-        // Mark all requests as read
-        matchRequests.forEach(req => req.read = true);
-        localStorage.setItem('matchRequests', JSON.stringify(matchRequests));
-        
-        // Create modal content
-        matchModal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Match Requests</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        ${matchRequests.length === 0 ? '<p class="text-center">No match requests yet.</p>' : 
-                            matchRequests.map(request => {
-                                const userPet = userPets.find(p => p.id == request.userPetId);
-                                const targetPet = pets.find(p => p.id == request.targetPetId);
-                                return `
-                                    <div class="card mb-3">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h6 class="card-title mb-0">
-                                                    Match Request: ${userPet?.name || 'Your Pet'} ↔️ ${targetPet?.name || 'Target Pet'}
-                                                </h6>
-                                                <span class="badge ${request.status === 'pending' ? 'bg-warning' : 
-                                                                    request.status === 'accepted' ? 'bg-success' : 'bg-danger'}">
-                                                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                                                </span>
-                                            </div>
-                                            ${request.message ? `<p class="card-text">"${request.message}"</p>` : ''}
-                                            <small class="text-muted">
-                                                Sent on ${new Date(request.timestamp).toLocaleDateString()}
-                                            </small>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')
-                        }
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(matchModal);
-    }
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(matchModal);
-    modal.show();
-    
-    // Update UI to reflect read notifications
-    updateAuthUI(true);
-}
-
-// Update submitMatchRequest function to handle notifications
-function submitMatchRequest() {
+// --- MATCH REQUEST BACKEND INTEGRATION ---
+async function submitMatchRequest() {
     const userPetId = document.getElementById('userPetSelect').value;
     const message = document.getElementById('matchMessage').value;
+    const submitBtn = document.getElementById('submitMatchBtn');
 
     if (!userPetId) {
         alert('Please select one of your pets to send a match request.');
         return;
     }
 
-    // Store match request in localStorage
-    const matchRequests = JSON.parse(localStorage.getItem('matchRequests') || '[]');
-    matchRequests.push({
-        id: Date.now(),
-        userPetId: userPetId,
-        targetPetId: selectedPetId,
-        message: message,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-        read: false
-    });
-    localStorage.setItem('matchRequests', JSON.stringify(matchRequests));
+    // Find sender (current user) and senderPet
+    const userId = localStorage.getItem('userId'); // This should be MongoDB _id
+    const userPets = JSON.parse(localStorage.getItem('userPets') || '[]');
+    const senderPet = userPets.find(p => p._id === userPetId || p.id === userPetId);
+    if (!senderPet) {
+        alert('Could not find your selected pet.');
+        return;
+    }
 
-    // Hide the form and show success message
-    cancelMatchRequest();
-    alert('Match request sent successfully!');
-    
-    // Update the UI to show new notification
+    // Find receiverPet and receiver (target pet and its owner)
+    const allPets = JSON.parse(localStorage.getItem('pets') || '[]');
+    const receiverPet = allPets.find(p => p._id === window.selectedPetId || p.id === window.selectedPetId);
+    if (!receiverPet) {
+        alert('Could not find the target pet.');
+        return;
+    }
+    const receiverId = receiverPet.userId;
+
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+    // Prepare payload
+    const payload = {
+        sender: userId,
+        senderPet: senderPet._id || senderPet.id,
+        receiver: receiverId,
+        receiverPet: receiverPet._id || receiverPet.id,
+        message
+    };
+    console.log('Submitting match request payload:', payload);
+
+    // Send to backend
+    try {
+        const response = await fetch('/api/match-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        console.log('Backend response:', data);
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to send match request');
+        }
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Request';
+        cancelMatchRequest();
+        // Show success toast
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed bottom-0 end-0 p-3';
+        toast.style.zIndex = '5';
+        toast.innerHTML = `
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header" style="background-color: #012312; color: white;">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong class="me-auto">Success</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    Match request sent successfully!
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.remove(); }, 3000);
+        updateAuthUI(true);
+    } catch (error) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Request';
+        alert(error.message || 'Failed to send match request.');
+        console.error('Match request error:', error);
+    }
+}
+
+// Show match requests modal with backend data
+let matchModal = null;
+async function showMatchRequests() {
+    if (matchModal) matchModal.remove();
+    matchModal = document.createElement('div');
+    matchModal.id = 'matchRequestsModal';
+    matchModal.className = 'modal fade';
+    matchModal.setAttribute('tabindex', '-1');
+
+    // Always fetch latest pets and userPets
+    let allPets = [];
+    let userPets = [];
+    try {
+        const petsRes = await fetch('/api/pets');
+        allPets = await petsRes.json();
+        const userId = localStorage.getItem('userId');
+        console.log('Current userId:', userId); // Debug log
+        userPets = allPets.filter(p => p.userId === userId);
+        localStorage.setItem('pets', JSON.stringify(allPets));
+        localStorage.setItem('userPets', JSON.stringify(userPets));
+    } catch (e) {
+        allPets = JSON.parse(localStorage.getItem('pets') || '[]');
+        userPets = JSON.parse(localStorage.getItem('userPets') || '[]');
+    }
+
+    // Fetch match requests from backend
+    const userId = localStorage.getItem('userId');
+    console.log('Current userId:', userId); // Debug log
+    let requests = [];
+    try {
+        const res = await fetch(`/api/match-requests?userId=${userId}`);
+        requests = await res.json();
+        console.log('Fetched match requests:', requests); // Debug log
+        if (!Array.isArray(requests)) requests = [];
+    } catch (e) {
+        requests = [];
+    }
+
+    // Split requests into sent and received (robust comparison for ObjectId or string)
+    const sentRequests = requests.filter(r => String(r.sender?._id || r.sender?.$oid || r.sender) === String(userId));
+    const receivedRequests = requests.filter(r => String(r.receiver?._id || r.receiver?.$oid || r.receiver) === String(userId));
+
+    // Modal content
+    matchModal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #012312; color: white;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-heart me-2"></i>Match Requests
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="mb-3">Sent Requests</h6>
+                    ${sentRequests.length === 0 ?
+                        `<div class='text-muted mb-4'>No sent match requests.</div>` :
+                        sentRequests.map(request => {
+                            let receiverPetName = request.receiverPet?.name || 'Target Pet';
+                            let senderPetName = request.senderPet?.name || 'Your Pet';
+                            return `
+                                <div class="card mb-2 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-paw me-2" style="color: #FFB031;"></i>
+                                                ${senderPetName} → ${receiverPetName}
+                                            </h6>
+                                            <span class="badge ${request.status === 'pending' ? 'bg-warning' : request.status === 'accepted' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                                                <i class="fas ${request.status === 'pending' ? 'fa-clock' : request.status === 'accepted' ? 'fa-check-circle' : 'fa-times-circle'} me-1"></i>
+                                                ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                            </span>
+                                        </div>
+                                        ${request.message ?
+                                            `<div class="card-text bg-light p-3 rounded mb-2">
+                                                <i class="fas fa-quote-left me-2" style="color: #FFB031;"></i>
+                                                ${request.message}
+                                            </div>` : ''}
+                                        <small class="text-muted">
+                                            <i class="far fa-clock me-1"></i>
+                                            Sent on ${new Date(request.createdAt).toLocaleDateString()}
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                    }
+                    <hr/>
+                    <h6 class="mb-3">Received Requests</h6>
+                    ${receivedRequests.length === 0 ?
+                        `<div class='text-muted mb-4'>No received match requests.</div>` :
+                        receivedRequests.map(request => {
+                            let senderPetName = request.senderPet?.name || 'Sender Pet';
+                            let receiverPetName = request.receiverPet?.name || 'Your Pet';
+                            return `
+                                <div class="card mb-2 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-paw me-2" style="color: #FFB031;"></i>
+                                                ${senderPetName} → ${receiverPetName}
+                                            </h6>
+                                            <span class="badge ${request.status === 'pending' ? 'bg-warning' : request.status === 'accepted' ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                                                <i class="fas ${request.status === 'pending' ? 'fa-clock' : request.status === 'accepted' ? 'fa-check-circle' : 'fa-times-circle'} me-1"></i>
+                                                ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                            </span>
+                                        </div>
+                                        ${request.message ?
+                                            `<div class="card-text bg-light p-3 rounded mb-2">
+                                                <i class="fas fa-quote-left me-2" style="color: #FFB031;"></i>
+                                                ${request.message}
+                                            </div>` : ''}
+                                        <small class="text-muted">
+                                            <i class="far fa-clock me-1"></i>
+                                            Sent on ${new Date(request.createdAt).toLocaleDateString()}
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(matchModal);
+    const modal = new bootstrap.Modal(matchModal);
+    modal.show();
     updateAuthUI(true);
 }
+window.showMatchRequests = showMatchRequests;
 
 // --- PETS BACKEND INTEGRATION ---
 
