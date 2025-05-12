@@ -640,6 +640,16 @@ async function showMatchRequests() {
                                             <i class="far fa-clock me-1"></i>
                                             Sent on ${new Date(request.createdAt).toLocaleDateString()}
                                         </small>
+                                        ${request.status === 'pending' ? `
+                                            <div class="mt-3 d-flex gap-2">
+                                                <button class="btn btn-success btn-sm" onclick="handleMatchRequestAction('${request._id}','accepted')">
+                                                    <i class="fas fa-check me-1"></i>Accept
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="handleMatchRequestAction('${request._id}','rejected')">
+                                                    <i class="fas fa-times me-1"></i>Reject
+                                                </button>
+                                            </div>
+                                        ` : ''}
                                     </div>
                                 </div>
                             `;
@@ -660,6 +670,23 @@ async function showMatchRequests() {
     updateAuthUI(true);
 }
 window.showMatchRequests = showMatchRequests;
+
+// Add handler for accept/reject actions
+window.handleMatchRequestAction = async function(requestId, action) {
+    try {
+        const res = await fetch(`/api/match-requests/${requestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: action })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to update request');
+        // Optionally show a toast/alert
+        showMatchRequests(); // Refresh modal
+    } catch (err) {
+        alert(err.message || 'Failed to update match request.');
+    }
+}
 
 // --- PETS BACKEND INTEGRATION ---
 
