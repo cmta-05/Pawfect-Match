@@ -846,6 +846,8 @@ async function handleDeletePet(id) {
             }
             // Success: refresh pets
             await renderMyPets();
+            // Always refresh match requests list
+            await showMatchRequests();
         } catch (err) {
             alert('Error deleting pet. See console for details.');
             console.error('Delete error:', err);

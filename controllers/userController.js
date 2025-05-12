@@ -2,6 +2,7 @@ const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Pet = require('../models/Pet');
+const MatchRequest = require('../models/MatchRequest');
 
 // Create user
 exports.createUser = async (req, res) => {
@@ -96,6 +97,17 @@ exports.deleteUser = async (req, res) => {
     }
     // Also delete all pets belonging to this user
     await Pet.deleteMany({ userId: user._id.toString() });
+    // Delete all match requests where this user is sender or receiver, or their pets are involved
+    const userPets = await Pet.find({ userId: user._id.toString() });
+    const userPetIds = userPets.map(pet => pet._id);
+    await MatchRequest.deleteMany({
+      $or: [
+        { sender: user._id },
+        { receiver: user._id },
+        { senderPet: { $in: userPetIds } },
+        { receiverPet: { $in: userPetIds } }
+      ]
+    });
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     if (error.name === 'CastError') {

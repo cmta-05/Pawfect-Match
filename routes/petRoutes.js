@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Pet = require('../models/Pet');
 const User = require('../models/user');
+const MatchRequest = require('../models/MatchRequest');
 
 // Multer setup for image uploads
 const multer = require('multer');
@@ -181,6 +182,8 @@ router.delete('/:id', async (req, res) => {
   try {
     const pet = await Pet.findByIdAndDelete(req.params.id);
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
+    // Delete all match requests where this pet is senderPet or receiverPet
+    await MatchRequest.deleteMany({ $or: [ { senderPet: req.params.id }, { receiverPet: req.params.id } ] });
     res.json({ message: 'Pet deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
