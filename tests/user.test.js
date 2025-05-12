@@ -1,7 +1,8 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../server');
-const User = require('../models/User');
+const User = require('../models/user');
+const { expect } = require('chai');
 
 // Test data
 const testUser = {

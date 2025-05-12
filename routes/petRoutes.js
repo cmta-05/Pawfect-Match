@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Pet = require('../models/Pet');
-const User = require('../models/User');
+const User = require('../models/user');
 
 // Multer setup for image uploads
 const multer = require('multer');

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Pet = require('./models/Pet');
-const User = require('./models/User');
+const User = require('./models/user');
 
 async function cleanupOrphanedPets() {
   await mongoose.connect('mongodb+srv://jabr2023596273993:DfPGp0R4SiFs3Q1M@cluster0.zwcnvaf.mongodb.net/test?retryWrites=true&w=majority&authSource=admin');
