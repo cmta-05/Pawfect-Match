@@ -107,20 +107,13 @@
                                 <img src="/images/beagle.png" class="main-pet-image position-absolute top-0 start-0 w-100 h-100" alt="Pet" style="object-fit: cover;">
                             </div>
                             <div class="d-flex gap-2 mt-3">
-                                <div class="pet-thumbnail-wrapper" style="width: 80px; height: 80px; cursor: pointer;">
-                                    <img src="/images/beagle.png" class="pet-thumbnail w-100 h-100" alt="Pet thumbnail" style="object-fit: cover; border-radius: 4px;">
-                                </div>
-                                <div class="pet-thumbnail-wrapper" style="width: 80px; height: 80px; cursor: pointer;">
-                                    <img src="" class="pet-thumbnail w-100 h-100" alt="Pet thumbnail" style="object-fit: cover; border-radius: 4px;">
-                                </div>
-                                <div class="pet-thumbnail-wrapper" style="width: 80px; height: 80px; cursor: pointer;">
-                                    <img src="" class="pet-thumbnail w-100 h-100" alt="Pet thumbnail" style="object-fit: cover; border-radius: 4px;">
-                                </div>
+                                <!-- Removed pet-thumbnail-wrapper and pet-thumbnail images -->
                             </div>
                         </div>
                         <div class="col-md-6">
                             <p class="pet-breed mb-2"><i class="fas fa-dog me-2"></i>Breed: <span></span></p>
                             <p class="pet-age mb-2"><i class="fas fa-birthday-cake me-2"></i>Age: <span></span></p>
+                            <p class="pet-gender mb-2"><i class="fas fa-venus-mars me-2"></i>Gender: <span></span></p>
                             <p class="pet-location mb-3"><i class="fas fa-map-marker-alt me-2"></i>Location: <span></span></p>
                             <h6 class="mt-4">About</h6>
                             <p class="pet-description"></p>
@@ -450,6 +443,7 @@
             // Update pet details
             modal.querySelector('.pet-breed span').textContent = pet.breed;
             modal.querySelector('.pet-age span').textContent = pet.age;
+            modal.querySelector('.pet-gender span').textContent = pet.gender;
             modal.querySelector('.pet-location span').textContent = pet.location;
             modal.querySelector('.pet-description').textContent = pet.description;
 
@@ -474,31 +468,9 @@
                 favoriteBtn.style.color = '#012312';
             }
 
-            // Update thumbnails
+            // Remove code that updates thumbnails in the modal
             const thumbnailContainer = modal.querySelector('.d-flex.gap-2.mt-3');
-            thumbnailContainer.innerHTML = ''; // Clear existing thumbnails
-
-            // Create thumbnail for the main image
-            const thumbWrapper = document.createElement('div');
-            thumbWrapper.className = 'pet-thumbnail-wrapper';
-            thumbWrapper.style.cssText = 'width: 80px; height: 80px; cursor: pointer;';
-
-            const thumbImg = document.createElement('img');
-            thumbImg.className = 'pet-thumbnail w-100 h-100';
-            thumbImg.alt = `${pet.name} thumbnail`;
-            thumbImg.style.cssText = 'object-fit: cover; border-radius: 4px;';
-            
-            // Set up error handling before setting src
-            thumbImg.onerror = function() {
-                if (this.src !== 'images/default-pet.jpg') {
-                    this.src = 'images/default-pet.jpg';
-                }
-                this.onerror = null;
-            };
-
-            thumbImg.src = pet.images[0];
-            thumbWrapper.appendChild(thumbImg);
-            thumbnailContainer.appendChild(thumbWrapper);
+            if (thumbnailContainer) thumbnailContainer.innerHTML = '';
         }
 
         function sendMatchRequest(petId) {
@@ -544,11 +516,10 @@
                                 <div class="card-body">
                                     <h5 class="card-title">${pet.name}</h5>
                                     <p class="card-text">
-                                        <i class="fas fa-dog me-2"></i>${pet.breed}
-                                        <span class="ms-3"><i class="fas fa-birthday-cake me-2"></i>${pet.age}</span>
-                                    </p>
-                                    <p class="card-text">
-                                        <i class="fas fa-map-marker-alt me-2"></i>${pet.location}
+                                        <strong>Breed:</strong> ${pet.breed}<br>
+                                        <strong>Age:</strong> ${pet.age}<br>
+                                        <strong>Gender:</strong> ${pet.gender}<br>
+                                        <strong>Location:</strong> ${pet.location}
                                     </p>
                                     <p class="card-text">${pet.description}</p>
                                 </div>
