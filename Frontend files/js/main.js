@@ -13,10 +13,11 @@ function updateAuthUI(isLoggedIn) {
         loginLinks.forEach(link => link.style.display = 'none');
         if (userProfileContainer) {
             const userName = localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'User';
-            // Get unread match requests count
-            const matchRequests = JSON.parse(localStorage.getItem('matchRequests') || '[]');
-            const unreadCount = matchRequests.filter(req => !req.read).length;
-            const notificationBadge = unreadCount > 0 ? `<span class="badge rounded-pill bg-danger ms-2">${unreadCount}</span>` : '';
+            // Notification for received match requests
+            const pendingReceived = parseInt(localStorage.getItem('pendingReceivedMatchRequests') || '0', 10);
+            // Notification for sent match request status updates
+            const pendingSentStatus = parseInt(localStorage.getItem('pendingSentStatusNotif') || '0', 10);
+            const notifDot = (pendingReceived > 0 || pendingSentStatus > 0) ? `<span style=\"display:inline-block;width:10px;height:10px;background:#dc3545;border-radius:50%;margin-left:6px;vertical-align:middle;\"></span>` : '';
             userProfileContainer.innerHTML = `
                 <div class="dropdown">
                     <a href="#" class="nav-link dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
@@ -25,12 +26,12 @@ function updateAuthUI(isLoggedIn) {
                             class="rounded-circle"
                             style="width: 32px; height: 32px;">
                         <span class="d-none d-md-inline" style="color: #FFB031;">${userName}</span>
-                        ${unreadCount > 0 ? `<span class="badge rounded-pill bg-danger">${unreadCount}</span>` : ''}
+                        ${notifDot}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="my-pets.html"><i class="fas fa-paw me-2"></i>My Pets</a></li>
                         <li><a class="dropdown-item" href="#" onclick="showMatchRequests()">
-                            <i class="fas fa-heart me-2"></i>Match Requests${notificationBadge}
+                            <i class="fas fa-heart me-2"></i>Match Requests${notifDot}
                         </a></li>
                         <li><a class="dropdown-item" href="#" onclick="showFavorites()"><i class="fas fa-star me-2"></i>My Favorites</a></li>
                         <li><hr class="dropdown-divider"></li>
@@ -791,6 +792,7 @@ async function submitMatchRequest() {
         document.body.appendChild(toast);
         setTimeout(() => { toast.remove(); }, 3000);
         updateAuthUI(true);
+        await updateMatchRequestNotification();
     } catch (error) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Request';
@@ -957,6 +959,7 @@ window.handleMatchRequestAction = async function(requestId, action) {
         if (!res.ok) throw new Error(data.message || 'Failed to update request');
         // Optionally show a toast/alert
         showMatchRequests(); // Refresh modal
+        await updateMatchRequestNotification();
     } catch (err) {
         alert(err.message || 'Failed to update match request.');
     }
@@ -1351,3 +1354,87 @@ if (contactForm) {
 }
 
 window.toggleFavorite = toggleFavorite;
+
+// Add this function to fetch and update received match request notification
+async function updateMatchRequestNotification() {
+    if (!localStorage.getItem('isLoggedIn') || !localStorage.getItem('userId')) return;
+    try {
+        const userId = localStorage.getItem('userId');
+        const res = await fetch(`/api/match-requests?userId=${userId}`);
+        let requests = await res.json();
+        if (!Array.isArray(requests)) requests = [];
+        // Only count received and pending requests
+        const receivedRequests = requests.filter(r => String(r.receiver?._id || r.receiver?.$oid || r.receiver) === String(userId) && r.status === 'pending');
+        localStorage.setItem('pendingReceivedMatchRequests', receivedRequests.length);
+    } catch (e) {
+        localStorage.setItem('pendingReceivedMatchRequests', 0);
+    }
+    updateAuthUI(localStorage.getItem('isLoggedIn') === 'true');
+}
+
+// On page load, fetch and update match request notification
+if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userId')) {
+    updateMatchRequestNotification();
+}
+
+// Add this function to fetch and update notifications for sent match requests that have been updated (accepted/rejected)
+async function updateSentMatchRequestStatusNotification() {
+    if (!localStorage.getItem('isLoggedIn') || !localStorage.getItem('userId')) return;
+    try {
+        const userId = localStorage.getItem('userId');
+        const res = await fetch(`/api/match-requests?userId=${userId}`);
+        let requests = await res.json();
+        if (!Array.isArray(requests)) requests = [];
+        // Only count sent requests that are accepted/rejected and not yet seen
+        let seenStatus = JSON.parse(localStorage.getItem('seenSentStatus') || '{}');
+        const sentRequests = requests.filter(r => String(r.sender?._id || r.sender?.$oid || r.sender) === String(userId));
+        const updatedSent = sentRequests.filter(r => (r.status === 'accepted' || r.status === 'rejected') && !seenStatus[r._id]);
+        localStorage.setItem('pendingSentStatusNotif', updatedSent.length);
+    } catch (e) {
+        localStorage.setItem('pendingSentStatusNotif', 0);
+    }
+    updateAuthUI(localStorage.getItem('isLoggedIn') === 'true');
+}
+
+// On page load, fetch and update both notifications
+if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userId')) {
+    updateMatchRequestNotification();
+    updateSentMatchRequestStatusNotification();
+}
+
+// Patch submitMatchRequest and handleMatchRequestAction only once
+const originalSubmitMatchRequest = submitMatchRequest;
+submitMatchRequest = async function() {
+    await originalSubmitMatchRequest.apply(this, arguments);
+    await updateMatchRequestNotification();
+    await updateSentMatchRequestStatusNotification();
+};
+
+const originalHandleMatchRequestAction = window.handleMatchRequestAction;
+window.handleMatchRequestAction = async function(requestId, action) {
+    await originalHandleMatchRequestAction.apply(this, arguments);
+    await updateMatchRequestNotification();
+    await updateSentMatchRequestStatusNotification();
+};
+
+// Mark sent status notifications as seen when opening the modal
+const originalShowMatchRequests = window.showMatchRequests;
+window.showMatchRequests = async function() {
+    await originalShowMatchRequests.apply(this, arguments);
+    // Mark all accepted/rejected sent requests as seen
+    try {
+        const userId = localStorage.getItem('userId');
+        const res = await fetch(`/api/match-requests?userId=${userId}`);
+        let requests = await res.json();
+        if (!Array.isArray(requests)) requests = [];
+        let seenStatus = JSON.parse(localStorage.getItem('seenSentStatus') || '{}');
+        const sentRequests = requests.filter(r => String(r.sender?._id || r.sender?.$oid || r.sender) === String(userId));
+        sentRequests.forEach(r => {
+            if ((r.status === 'accepted' || r.status === 'rejected')) {
+                seenStatus[r._id] = true;
+            }
+        });
+        localStorage.setItem('seenSentStatus', JSON.stringify(seenStatus));
+        await updateSentMatchRequestStatusNotification();
+    } catch (e) {}
+};
