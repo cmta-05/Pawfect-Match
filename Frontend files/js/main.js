@@ -157,40 +157,76 @@ function initializePetModal() {
 
 // Initialize search and filter functionality
 function initializeSearchAndFilter() {
-    const searchInput = document.querySelector('input[type="text"]');
+    const searchInput = document.querySelector('.modern-search-input');
+    const breedFilter = document.querySelectorAll('.modern-select')[0];
+    const genderFilter = document.querySelectorAll('.modern-select')[1];
+    const sortFilter = document.querySelectorAll('.modern-select')[2];
+    if (breedFilter) {
+        breedFilter.addEventListener('change', function() {
+            applyBrowseFilters();
+        });
+    }
+    if (genderFilter) {
+        genderFilter.addEventListener('change', function() {
+            applyBrowseFilters();
+        });
+    }
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const petCards = document.querySelectorAll('.card');
-            
-            petCards.forEach(card => {
-                const petName = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
-                const petBreed = card.querySelector('.card-text')?.textContent.toLowerCase() || '';
-                
-                if (petName.includes(searchTerm) || petBreed.includes(searchTerm)) {
-                    card.closest('.col').style.display = '';
-                } else {
-                    card.closest('.col').style.display = 'none';
-                }
-            });
+            applyBrowseFilters();
         });
     }
 
-    const breedFilter = document.querySelector('select:first-of-type');
-    if (breedFilter) {
-        breedFilter.addEventListener('change', function() {
-            const selectedBreed = this.value.toLowerCase();
-            const petCards = document.querySelectorAll('.card');
-            
-            petCards.forEach(card => {
-                const petBreed = card.querySelector('.card-text')?.textContent.toLowerCase() || '';
-                
-                if (selectedBreed === 'filter by breed' || petBreed.includes(selectedBreed)) {
-                    card.closest('.col').style.display = '';
-                } else {
-                    card.closest('.col').style.display = 'none';
+    function applyBrowseFilters() {
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const selectedBreed = breedFilter ? breedFilter.value.toLowerCase() : '';
+        const selectedGender = genderFilter ? genderFilter.value.toLowerCase() : '';
+        const petCards = document.querySelectorAll('.card');
+        petCards.forEach(card => {
+            const petName = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
+            const petBreed = card.querySelector('.card-text')?.textContent.toLowerCase() || '';
+            const petGender = card.querySelector('.card-text')?.innerText.toLowerCase().includes('gender: female') ? 'female' : (card.querySelector('.card-text')?.innerText.toLowerCase().includes('gender: male') ? 'male' : '');
+            let show = true;
+            if (searchTerm && !(petName.includes(searchTerm) || petBreed.includes(searchTerm))) show = false;
+            if (selectedBreed && selectedBreed !== 'filter by breed' && !petBreed.includes(selectedBreed)) show = false;
+            if (selectedGender && selectedGender !== 'filter by gender' && petGender !== selectedGender) show = false;
+            card.closest('.col').style.display = show ? '' : 'none';
+        });
+    }
+
+    if (sortFilter) {
+        sortFilter.addEventListener('change', function() {
+            const sortBy = this.value;
+            const petContainer = document.querySelector('.pet-cards-grid');
+            const petCards = Array.from(petContainer.querySelectorAll('.col'));
+            petCards.sort((a, b) => {
+                const aName = a.querySelector('.card-title').textContent;
+                const bName = b.querySelector('.card-title').textContent;
+                // Extract age values properly
+                const aAgeText = a.querySelector('.card-text').textContent;
+                const bAgeText = b.querySelector('.card-text').textContent;
+                // Extract numeric age values using regex
+                const aAgeMatch = aAgeText.match(/(\d+(?:\.\d+)?)\s*years?/);
+                const bAgeMatch = bAgeText.match(/(\d+(?:\.\d+)?)\s*years?/);
+                const aAge = aAgeMatch ? parseFloat(aAgeMatch[1]) : 0;
+                const bAge = bAgeMatch ? parseFloat(bAgeMatch[1]) : 0;
+                // Extract location values
+                const aLocation = a.querySelector('.card-text').innerText.toLowerCase().match(/location:\s*([^\n]+)/);
+                const bLocation = b.querySelector('.card-text').innerText.toLowerCase().match(/location:\s*([^\n]+)/);
+                const aLoc = aLocation ? aLocation[1].trim() : '';
+                const bLoc = bLocation ? bLocation[1].trim() : '';
+                switch(sortBy) {
+                    case 'Name':
+                        return aName.localeCompare(bName);
+                    case 'Age':
+                        return aAge - bAge;
+                    case 'Location':
+                        return aLoc.localeCompare(bLoc);
+                    default:
+                        return 0;
                 }
             });
+            petCards.forEach(card => petContainer.appendChild(card));
         });
     }
 }
@@ -1046,9 +1082,13 @@ function renderPetCard(pet) {
                 <i class="fas fa-trash me-2"></i>Delete
            </button>`
         : '';
+    // Fun badge phrases for My Pets
+    const funBadges = ['My Buddy', 'Best Friend', 'Cuddle Pro', 'Fur Star', 'Snuggle Champ', 'Pawfect Pal', 'Top Dog'];
+    const badgeText = funBadges[Math.floor(Math.random() * funBadges.length)];
     return `
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 position-relative">
+                <span class="fun-badge">${badgeText}</span>
                 <img src="${pet.profileImage}" 
                      class="card-img-top" 
                      alt="${pet.name}"
@@ -1438,3 +1478,35 @@ window.showMatchRequests = async function() {
         await updateSentMatchRequestStatusNotification();
     } catch (e) {}
 };
+
+// Render each pet as a card
+if (pets.length === 0) {
+    petGrid.innerHTML = `<div class='col-12 text-center'><p class='text-muted'>No pets found.</p></div>`;
+} else {
+    petGrid.innerHTML = '';
+    // Fun badge phrases
+    const funBadges = ['Adopt Me!', 'Woof!', 'New Friend!', 'So Cute!', 'Let\'s Play!', 'Pick Me!', 'Best Buddy!', 'Cuddle Me!'];
+    pets.forEach((pet, idx) => {
+        const card = document.createElement('div');
+        card.className = 'col';
+        // Pick a random badge
+        const badgeText = funBadges[Math.floor(Math.random() * funBadges.length)];
+        card.innerHTML = `
+            <div class="card h-100 position-relative">
+                <span class="fun-badge">${badgeText}</span>
+                <img src="${pet.profileImage || 'images/default-pet.jpg'}" class="card-img-top pet-image" alt="${pet.name}" data-bs-toggle="modal" data-bs-target="#petModal" data-pet-id="${pet._id}" onerror="this.onerror=null;this.src='images/default-pet.jpg';">
+                <div class="card-body">
+                    <h5 class="card-title">${pet.name}</h5>
+                    <p class="card-text">
+                        <strong>Breed:</strong> ${pet.breed}<br>
+                        <strong>Age:</strong> ${pet.age}<br>
+                        <strong>Gender:</strong> ${pet.gender}<br>
+                        <strong>Location:</strong> ${pet.location}
+                    </p>
+                    <p class="card-text">${pet.description}</p>
+                </div>
+            </div>
+        `;
+        petGrid.appendChild(card);
+    });
+}
