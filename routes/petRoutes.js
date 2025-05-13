@@ -84,14 +84,20 @@ router.get('/', async (req, res) => {
       pets = await Pet.find();
     }
     // Clean up pets with non-existent or inactive users
-    const users = await User.find({ status: 'active' }, '_id');
+    const users = await User.find({ status: 'active' }, '_id name');
+    const userMap = new Map(users.map(u => [String(u._id), u.name]));
     const userIds = new Set(users.map(u => String(u._id)));
     const orphanedPets = pets.filter(pet => !userIds.has(String(pet.userId)));
     if (orphanedPets.length > 0) {
       await Pet.deleteMany({ _id: { $in: orphanedPets.map(p => p._id) } });
       pets = pets.filter(pet => userIds.has(String(pet.userId)));
     }
-    res.json(pets);
+    // Add ownerName to each pet
+    const petsWithOwner = pets.map(pet => ({
+      ...pet.toObject(),
+      ownerName: userMap.get(String(pet.userId)) || 'Unknown'
+    }));
+    res.json(petsWithOwner);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

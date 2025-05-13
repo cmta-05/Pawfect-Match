@@ -159,6 +159,7 @@
                                         <th>Age</th>
                                         <th>Gender</th>
                                         <th>Location</th>
+                                        <th>Owner Name</th>
                                     </tr>
                                 </thead>
                                 <tbody id="petTableBody">
@@ -386,6 +387,7 @@
                             <td>${pet.age}</td>
                             <td>${pet.gender}</td>
                             <td>${pet.location}</td>
+                            <td>${pet.ownerName || 'Unknown'}</td>
                         </tr>
                     `;
                     petTableBody.innerHTML += row;
