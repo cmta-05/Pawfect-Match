@@ -152,14 +152,40 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn favorite-btn" onclick="toggleFavorite(selectedPetId)" style="background-color: #FFB031;">
+                        <button type="button" class="btn favorite-btn" onclick="window.toggleFavorite(selectedPetId)" style="background-color: #FFB031;" title="Add to Favorites">
                             <i class="far fa-heart"></i>
+                            <span class="ms-2 d-none d-md-inline" id="favorite-btn-label">Add to Favorites</span>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Success Modal for Favorites -->
+    <div class="modal fade" id="favoriteSuccessModal" tabindex="-1" aria-labelledby="favoriteSuccessModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 1.5rem; box-shadow: 0 0 32px #FFB03155;">
+          <div class="modal-body text-center py-5">
+            <div style="font-size: 3rem; color: #FFB031; animation: pop 0.5s cubic-bezier(.68,-0.55,.27,1.55);">
+              <i class="fas fa-heart"></i>
+            </div>
+            <h4 class="mt-3 mb-2" style="color: #012312;">Added to Favorites!</h4>
+            <div class="mb-3 mt-3">
+              <span style="color: #012312; font-size: 1.1rem;">Do you want to view your favorites list?</span>
+            </div>
+            <button id="viewFavoritesBtn" class="btn" style="background-color: #FFB031; color: #012312; font-weight: 600; border-radius: 2rem; padding: 0.5rem 1.5rem;">View Favorites</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+      @keyframes pop {
+        0% { transform: scale(0.5); opacity: 0; }
+        80% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+    </style>
 
     <!-- Footer -->
     <footer class="py-4" style="background-color: #012312; color: white;">
@@ -182,6 +208,7 @@
     <script src="js/main.js"></script>
     <script>
         let selectedPetId = null;
+        let pets = [];
 
         // Initialize pet modal functionality
         document.addEventListener('DOMContentLoaded', function() {
@@ -474,56 +501,6 @@
             thumbnailContainer.appendChild(thumbWrapper);
         }
 
-        function toggleFavorite(petId) {
-            // Check authentication before toggling favorite
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' && document.querySelector('#userProfileContainer').style.display !== 'none';
-            
-            if (!isLoggedIn) {
-                const loginPrompt = confirm('You need to be logged in to favorite pets. Would you like to log in now?');
-                if (loginPrompt) {
-                    window.location.href = 'login.html';
-                }
-                return;
-            }
-
-            // Get the current pet data
-            const pet = pets.find(p => p.id === petId);
-            if (!pet) {
-                console.error('Pet not found');
-                return;
-            }
-
-            // Get current favorites
-            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-            const isFavorite = favorites.some(fav => fav.id === petId);
-            
-            // Update favorites list
-            if (isFavorite) {
-                favorites = favorites.filter(fav => fav.id !== petId);
-            } else {
-                favorites.push(pet);
-            }
-            
-            // Save to localStorage
-            localStorage.setItem('favorites', JSON.stringify(favorites));
-
-            // Update button appearance
-            const btn = document.querySelector('.favorite-btn');
-            const icon = btn.querySelector('i');
-            
-            if (isFavorite) {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                btn.style.backgroundColor = '#FFB031';
-                btn.style.color = '#012312';
-            } else {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                btn.style.backgroundColor = '#012312';
-                btn.style.color = 'white';
-            }
-        }
-
         function sendMatchRequest(petId) {
             window.selectedPetId = petId;
             const form = document.getElementById('matchRequestForm');
@@ -544,7 +521,7 @@
             // Fetch pets from backend
             try {
                 const response = await fetch('http://localhost:3000/api/pets');
-                let pets = await response.json();
+                pets = await response.json();
                 if (!Array.isArray(pets)) throw new Error('Invalid data');
 
                 // Exclude current user's pets

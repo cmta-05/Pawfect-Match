@@ -196,6 +196,8 @@ function initializeSearchAndFilter() {
 
 // Update the pet modal with pet data
 function updatePetModal(pet) {
+    window.currentPet = pet;
+    selectedPetId = pet.id || pet._id;
     const mainImage = document.querySelector('.main-pet-image');
     if (mainImage) mainImage.src = pet.images[0];
 
@@ -250,6 +252,12 @@ function updatePetModal(pet) {
                 <i class="fas fa-star me-2"></i>Favorite
             </button>
         `;
+    }
+
+    // Update favorite button state and handler
+    const favoriteBtn = document.querySelector('.favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.onclick = function() { window.toggleFavorite(window.currentPet._id || window.currentPet.id); };
     }
 }
 
@@ -372,12 +380,11 @@ function showFavorites() {
                                                     <i class="fas fa-map-marker-alt me-2"></i>${pet.location}
                                                 </p>
                                             </div>
-                                            <div class="card-footer">
-                                                <button class="btn btn-sm" style="background-color: #012312; color: white;" 
-                                                    onclick="window.location.href='browse.html?pet=${pet.id}'">
+                                            <div class="card-footer d-flex justify-content-between">
+                                                <button class="btn btn-success view-details-btn" data-pet-id="${pet.id}" style="background-color: #012312; color: white;">
                                                     <i class="fas fa-eye me-2"></i>View Details
                                                 </button>
-                                                <button class="btn btn-sm btn-danger" onclick="removeFromFavorites(${pet.id})">
+                                                <button class="btn btn-danger remove-favorite-btn" data-pet-id="${pet.id}">
                                                     <i class="fas fa-heart-broken me-2"></i>Remove
                                                 </button>
                                             </div>
@@ -402,41 +409,308 @@ function showFavorites() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     const modal = new bootstrap.Modal(document.getElementById('favoritesModal'));
     modal.show();
+
+    // Add event listeners for remove and view details buttons
+    setTimeout(() => {
+        document.querySelectorAll('.remove-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const petId = this.getAttribute('data-pet-id');
+                removeFromFavorites(petId, true); // true = show toast
+            });
+        });
+        document.querySelectorAll('.view-details-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const petId = this.getAttribute('data-pet-id');
+                // Find the pet in favorites or global pets
+                let pet = null;
+                const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+                pet = favorites.find(p => String(p.id) === String(petId));
+                if (!pet && typeof pets !== 'undefined') {
+                    pet = pets.find(p => String(p.id || p._id) === String(petId));
+                }
+                if (pet) {
+                    // Hide favorites modal
+                    const favModal = bootstrap.Modal.getInstance(document.getElementById('favoritesModal'));
+                    if (favModal) favModal.hide();
+                    // Show pet modal
+                    if (typeof updatePetModal === 'function') {
+                        updatePetModal({
+                            id: pet.id || pet._id,
+                            name: pet.name,
+                            breed: pet.breed,
+                            age: pet.age,
+                            location: pet.location,
+                            description: pet.description,
+                            images: [pet.profileImage || (pet.images && pet.images[0]) || 'images/default-pet.jpg']
+                        });
+                        const petModal = new bootstrap.Modal(document.getElementById('petModal'));
+                        petModal.show();
+                    }
+                }
+            });
+        });
+    }, 300);
 }
 
-// Function to remove pet from favorites
-function removeFromFavorites(petId) {
-    let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    favorites = favorites.filter(pet => pet.id !== petId);
+function showFavoriteToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed bottom-0 end-0 p-3';
+    toast.style.zIndex = '1056';
+    toast.innerHTML = `
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header" style="background-color: #012312; color: white;">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 2500);
+}
+
+// --- FAVORITES BACKEND SYNC ---
+async function fetchFavoritesFromBackend() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return [];
+    try {
+        const res = await fetch(`/api/favorites/${userId}`);
+        if (!res.ok) throw new Error('Failed to fetch favorites');
+        const data = await res.json();
+        // data is an array of { _id, userId, petId: { ...pet }, createdAt }
+        // Map to localStorage/UI format
+        const favorites = data.map(fav => {
+            const pet = fav.petId;
+            return {
+                id: pet._id || pet.id,
+                name: pet.name,
+                breed: pet.breed,
+                age: pet.age,
+                location: pet.location,
+                description: pet.description,
+                profileImage: pet.profileImage || (pet.images && pet.images[0]) || 'images/default-pet.jpg',
+                images: pet.images || []
+            };
+        });
     localStorage.setItem('favorites', JSON.stringify(favorites));
-    showFavorites(); // Refresh the modal
+        return favorites;
+    } catch (e) {
+        return [];
+    }
 }
 
-// Function to add pet to favorites
-function toggleFavorite(petId) {
+// On login/page load, always fetch from backend
+if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userId')) {
+    fetchFavoritesFromBackend();
+}
+
+async function toggleFavorite(petId) {
+    console.log('toggleFavorite called with petId:', petId, 'pets:', pets);
     if (!isLoggedIn) {
         window.location.href = 'login.html';
         return;
     }
-
-    let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    const pet = pets.find(p => p.id === petId);
-    
-    if (!pet) return;
-
-    const isFavorite = favorites.some(fav => fav.id === petId);
+    const userId = localStorage.getItem('userId');
+    let favorites = await fetchFavoritesFromBackend();
+    // Always use _id for pet
+    const pet = pets.find(p => (p._id || p.id) === petId || (p.id || p._id) === petId);
+    if (!pet) {
+        console.error('Pet not found in pets array for petId:', petId);
+        return;
+    }
+    const petObjectId = pet._id || pet.id;
+    const isFavorite = favorites.some(fav => (fav.id || fav._id) === petObjectId);
     if (isFavorite) {
-        favorites = favorites.filter(fav => fav.id !== petId);
+        // Remove from backend (use query params)
+        try {
+            await fetch(`/api/favorites/remove?userId=${encodeURIComponent(userId)}&petId=${encodeURIComponent(petObjectId)}`, {
+                method: 'DELETE'
+            });
+        } catch (e) {}
+        showFavoriteToast('Removed from favorites!');
     } else {
-        favorites.push(pet);
+        // Add to backend
+        try {
+            console.log('Sending POST /api/favorites/add', { userId, petId: petObjectId });
+            const res = await fetch('/api/favorites/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, petId: petObjectId })
+            });
+            const data = await res.json();
+            console.log('Add favorite response:', res.status, data);
+            if (!res.ok) alert(data.message || 'Failed to add favorite');
+        } catch (e) {
+            console.error('Add favorite error:', e);
+        }
+        // Show animated success modal
+        const favModalEl = document.getElementById('favoriteSuccessModal');
+        const favModal = new bootstrap.Modal(favModalEl);
+        favModal.show();
+        setTimeout(() => {
+          const viewBtn = document.getElementById('viewFavoritesBtn');
+          if (viewBtn) {
+            viewBtn.onclick = function() {
+              favModal.hide();
+              setTimeout(() => { if (typeof showFavorites === 'function') showFavorites(); }, 400);
+            };
+          }
+        }, 200);
+        setTimeout(() => {
+          if (favModalEl.classList.contains('show')) {
+            favModal.hide();
+          }
+        }, 1200);
+    }
+    // Always re-fetch from backend after add/remove
+    favorites = await fetchFavoritesFromBackend();
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    const btn = document.querySelector('.favorite-btn');
+    const icon = btn.querySelector('i');
+    const nowFavorite = favorites.some(fav => (fav.id || fav._id) === petObjectId);
+    if (!nowFavorite) {
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        btn.style.backgroundColor = '#FFB031';
+        btn.style.color = '#012312';
+    } else {
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        btn.style.backgroundColor = '#012312';
+        btn.style.color = 'white';
+    }
+}
+
+async function removeFromFavorites(petId, showToast) {
+    const userId = localStorage.getItem('userId');
+    // Always use _id for pet
+    const favorites = await fetchFavoritesFromBackend();
+    const pet = favorites.find(p => (p._id || p.id) === petId || (p.id || p._id) === petId);
+    const petObjectId = pet ? (pet._id || pet.id) : petId;
+    // Remove from backend (use query params)
+    try {
+        await fetch(`/api/favorites/remove?userId=${encodeURIComponent(userId)}&petId=${encodeURIComponent(petObjectId)}`, {
+            method: 'DELETE'
+        });
+    } catch (e) {}
+    // Always re-fetch from backend after remove
+    const newFavorites = await fetchFavoritesFromBackend();
+    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    showFavorites(); // Refresh the modal
+    if (showToast) showFavoriteToast('Removed from favorites!');
+}
+
+// Patch showFavorites to always use backend-fetched favorites and _id
+async function showFavorites() {
+    const favorites = await fetchFavoritesFromBackend();
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    const modalHtml = `
+        <div class="modal fade" id="favoritesModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">My Favorite Pets</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${favorites.length === 0 ? `
+                            <div class="text-center py-5">
+                                <i class="fas fa-heart text-muted mb-3" style="font-size: 3rem;"></i>
+                                <p class="lead">You haven't favorited any pets yet.</p>
+                                <a href="browse.html" class="btn" style="background-color: #012312; color: white;">
+                                    Browse Pets
+                                </a>
+                            </div>
+                        ` : `
+                            <div class="row">
+                                ${favorites.map(pet => `
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div style="position: relative; padding-top: 100%; overflow: hidden;">
+                                                <img src="${pet.profileImage || pet.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(pet.name)}&background=012312&color=ffffff`}" 
+                                                    class="card-img-top position-absolute top-0 start-0 w-100 h-100" 
+                                                    alt="${pet.name}"
+                                                    style="object-fit: cover;">
+                                            </div>
+                                            <div class="card-body">
+                                                <h5 class="card-title">${pet.name}</h5>
+                                                <p class="card-text">
+                                                    <i class="fas fa-dog me-2"></i>${pet.breed}<br>
+                                                    <i class="fas fa-birthday-cake me-2"></i>${pet.age}<br>
+                                                    <i class="fas fa-map-marker-alt me-2"></i>${pet.location}
+                                                </p>
+                                            </div>
+                                            <div class="card-footer d-flex justify-content-between">
+                                                <button class="btn btn-success view-details-btn" data-pet-id="${pet._id || pet.id}" style="background-color: #012312; color: white;">
+                                                    <i class="fas fa-eye me-2"></i>View Details
+                                                </button>
+                                                <button class="btn btn-danger remove-favorite-btn" data-pet-id="${pet._id || pet.id}">
+                                                    <i class="fas fa-heart-broken me-2"></i>Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('favoritesModal');
+    if (existingModal) {
+        existingModal.remove();
     }
 
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-    const btn = document.querySelector(`button[onclick="toggleFavorite(${petId})"]`);
-    if (btn) {
-        btn.innerHTML = `<i class="fas fa-star me-2"></i>${isFavorite ? 'Favorite' : 'Unfavorite'}`;
-        btn.classList.toggle('active');
-    }
+    // Add new modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('favoritesModal'));
+    modal.show();
+
+    // Add event listeners for remove and view details buttons
+    setTimeout(() => {
+        document.querySelectorAll('.remove-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const petId = this.getAttribute('data-pet-id');
+                removeFromFavorites(petId, true); // true = show toast
+            });
+        });
+        document.querySelectorAll('.view-details-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const petId = this.getAttribute('data-pet-id');
+                // Find the pet in favorites or global pets
+                let pet = null;
+                const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+                pet = favorites.find(p => String(p._id || p.id) === String(petId));
+                if (!pet && typeof pets !== 'undefined') {
+                    pet = pets.find(p => String(p._id || p.id) === String(petId));
+                }
+                if (pet) {
+                    // Hide favorites modal
+                    const favModal = bootstrap.Modal.getInstance(document.getElementById('favoritesModal'));
+                    if (favModal) favModal.hide();
+                    // Show pet modal
+                    if (typeof updatePetModal === 'function') {
+                        updatePetModal({
+                            id: pet._id || pet.id,
+                            name: pet.name,
+                            breed: pet.breed,
+                            age: pet.age,
+                            location: pet.location,
+                            description: pet.description,
+                            images: [pet.profileImage || (pet.images && pet.images[0]) || 'images/default-pet.jpg']
+                        });
+                        const petModal = new bootstrap.Modal(document.getElementById('petModal'));
+                        petModal.show();
+                    }
+                }
+            });
+        });
+    }, 300);
 }
 
 // --- MATCH REQUEST BACKEND INTEGRATION ---
@@ -1075,3 +1349,5 @@ if (contactForm) {
         }
     });
 }
+
+window.toggleFavorite = toggleFavorite;
