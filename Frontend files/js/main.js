@@ -249,6 +249,7 @@ function updatePetModal(pet) {
         name: document.querySelector('.pet-name'),
         type: document.querySelector('.pet-type'),
         age: document.querySelector('.pet-age'),
+        gender: document.querySelector('.pet-gender'),
         location: document.querySelector('.pet-location'),
         description: document.querySelector('.pet-description')
     };
@@ -256,6 +257,10 @@ function updatePetModal(pet) {
     if (elements.name) elements.name.textContent = pet.name;
     if (elements.type) elements.type.innerHTML = `<i class="fas fa-dog me-2"></i>${pet.breed}`;
     if (elements.age) elements.age.innerHTML = `<i class="fas fa-birthday-cake me-2"></i>${pet.age}`;
+    if (elements.gender) {
+        const genderSpan = elements.gender.querySelector('span');
+         if (genderSpan) genderSpan.textContent = pet.gender;
+    }
     if (elements.location) elements.location.innerHTML = `<i class="fas fa-map-marker-alt me-2"></i>${pet.location}`;
     if (elements.description) elements.description.textContent = pet.description;
 
