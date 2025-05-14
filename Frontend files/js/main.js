@@ -840,7 +840,11 @@ async function submitMatchRequest() {
 // Show match requests modal with backend data
 let matchModal = null;
 async function showMatchRequests() {
-    if (matchModal) matchModal.remove();
+     if (matchModal) {
+        const bsModal = bootstrap.Modal.getInstance(matchModal);
+        if (bsModal) bsModal.hide();
+        matchModal.remove();
+    }
     matchModal = document.createElement('div');
     matchModal.id = 'matchRequestsModal';
     matchModal.className = 'modal fade';
