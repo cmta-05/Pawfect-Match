@@ -699,7 +699,9 @@ async function showFavorites() {
 
     // Remove existing modal if any
     const existingModal = document.getElementById('favoritesModal');
-    if (existingModal) {
+     if (existingModal) {
+        const bsModal = bootstrap.Modal.getInstance(existingModal);
+        if (bsModal) bsModal.hide();
         existingModal.remove();
     }
 
