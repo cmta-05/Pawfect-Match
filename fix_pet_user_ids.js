@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('./models/user');
+const User = require('./models/User');
 const Pet = require('./models/Pet');
 
 const MONGODB_URI = 'mongodb+srv://jabr2023596273993:DfPGp0R4SiFs3Q1M@cluster0.zwcnvaf.mongodb.net/?retryWrites=true&w=majority&authSource=admin';

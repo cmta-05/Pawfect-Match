@@ -1,6 +1,6 @@
 const MatchRequest = require('../models/MatchRequest');
 const Pet = require('../models/Pet');
-const User = require('../models/user');
+const User = require('../models/User');
 
 // Send a match request
 exports.sendMatchRequest = async (req, res) => {
