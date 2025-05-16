@@ -18,7 +18,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #012312;">
         <div class="container">
             <a class="navbar-brand" href="index.html">
-                <i class="fas fa-paw me-2"></i>Pawfect Match
+                <img src="./images/pawfect-main-logo.png" alt="">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -48,17 +48,35 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="container py-5">
+    <!-- Hero Section for My Pets -->
+    <section class="my-pets-hero-section py-4 position-relative">
+        <div class="my-pets-hero-bg"></div>
+        <div class="my-pets-hero-paws">
+            <i class="fas fa-paw paw-hero-1"></i>
+            <i class="fas fa-paw paw-hero-2"></i>
+            <i class="fas fa-paw paw-hero-3"></i>
+        </div>
+        <div class="container position-relative z-2">
+            <div class="row align-items-center">
+                <div class="col text-center">
+                    <span class="my-pets-hero-badge">Your Pack</span>
+                    <h1 class="display-5 fw-bold mb-2 text-gradient">My Pets</h1>
+                    <p class="lead text-muted mb-0">Manage your beloved pets, update their profiles, and keep their info up to date!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>My Pets</h2>
-            <button class="btn" style="background-color: #012312; color: white; display: none;" id="showAddPetForm">
+            <h2 class="my-pets-heading">My Pets</h2>
+            <button class="btn my-pets-add-btn" style="display: none;" id="showAddPetForm">
                 <i class="fas fa-plus me-2"></i>Add New Pet
             </button>
         </div>
 
         <!-- Add Pet Form (Initially Hidden) -->
-        <div class="card mb-4" id="addPetForm" style="display: none;">
+        <div class="card mb-4 my-pets-add-form-card" id="addPetForm" style="display: none;">
             <div class="card-body">
                 <h3 class="card-title mb-4">Add a New Pet</h3>
                 <form id="addPetFormElement" enctype="multipart/form-data">
@@ -115,13 +133,6 @@
                         <div class="form-text">This will be the main photo shown in the pet listing</div>
                         <div id="profileImagePreview" class="mt-2 d-flex gap-2 flex-wrap"></div>
                     </div>
-                    <div class="mb-3">
-                        <label for="additionalImages" class="form-label">Additional Photos</label>
-                        <input type="file" class="form-control" id="additionalImages" multiple accept="image/*"
-                               onchange="handleMultipleImagePreview(this, document.getElementById('additionalImagesPreview'))">
-                        <div class="form-text">Upload up to 3 additional pet photos all at once (optional).</div>
-                        <div id="additionalImagesPreview" class="mt-2 d-flex gap-2 flex-wrap"></div>
-                    </div>
                     <div id="imagePreview" class="mb-3 d-flex gap-2 flex-wrap">
                         <!-- Image previews will be shown here -->
                     </div>
@@ -134,7 +145,7 @@
         </div>
 
         <!-- Pet Cards Container -->
-        <div class="row" id="myPetsContainer">
+        <div class="row my-pets-cards-grid" id="myPetsContainer">
             <!-- Pet cards will be loaded here -->
         </div>
     </div>
@@ -268,7 +279,6 @@
 
                 // Make file upload optional during editing
                 document.getElementById('profileImage').required = false;
-                document.getElementById('additionalImages').required = false;
 
                 // Show current images
                 const imagePreview = document.getElementById('imagePreview');
@@ -277,12 +287,6 @@
                         <img src="${pet.profileImage}" alt="Profile Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
                         <span class="badge bg-primary position-absolute top-0 start-0 m-2">Current Profile</span>
                     </div>
-                    ${pet.additionalImages ? pet.additionalImages.map(img => `
-                        <div class="position-relative">
-                            <img src="${img}" alt="Additional Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
-                            <span class="badge bg-secondary position-absolute top-0 start-0 m-2">Current Additional</span>
-                        </div>
-                    `).join('') : ''}
                 `;
 
                 // Update the form submit button
@@ -333,23 +337,15 @@
                                             <i class=\"fas fa-birthday-cake me-2\"></i>${pet.age}<br>\n                                        
                                             <i class=\"fas fa-map-marker-alt me-2\"></i>${pet.location}\n                                    
                                             </p>\n                                    
-                                        <p class=\"card-text\">${pet.description}</p>\n                                    
-                                            ${pet.additionalImages && pet.additionalImages.length > 0 ? `\n                                    
-                                            
-                                            <div class=\"d-flex gap-2 mt-3\">\n                                        
-                                                ${pet.additionalImages.map(img => `\n                                            
-                                                <img src=\"${img}\" alt=\"Additional photo\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;\" onclick=\"showFullImage('${img}')\">\n                                        
-                                                `).join('')}\n                                    
-                                                </div>\n                                    
-                                                ` : ''}\n                                
-                                                </div>\n                                
-                                                <div class=\"card-footer d-flex justify-content-between\">\n                                    
-                                                    <button class=\"btn\" style=\"background-color: #FFB031; color: #012312;\" onclick=\"editPet('${pet._id}')\">\n                                        
-                                                        <i class=\"fas fa-edit me-2\"></i>Edit\n                                    
-                                                        </button>\n                                    
-                                                        <button class=\"btn btn-danger\" onclick=\"deletePet('${pet._id}')\">\n                                        
-                                                            <i class=\"fas fa-trash me-2\"></i>Delete\n                                    
-                                                            </button>\n                                
+                                        <p class=\"card-text\">${pet.description}</p>\n                                
+                                    </div>\n                                
+                                    <div class=\"card-footer d-flex justify-content-between\">\n                                    
+                                        <button class=\"btn\" style=\"background-color: #FFB031; color: #012312;\" onclick=\"editPet('${pet._id}')\">\n                                        
+                                            <i class=\"fas fa-edit me-2\"></i>Edit\n                                    
+                                        </button>\n                                    
+                                        <button class=\"btn btn-danger\" onclick=\"deletePet('${pet._id}')\">\n                                        
+                                            <i class=\"fas fa-trash me-2\"></i>Delete\n                                    
+                                        </button>\n                                
                                     </div>\n                            
                               </div>\n                        
                          </div>\n                    
@@ -450,11 +446,6 @@
                         if (profileImageInput.files[0]) {
                             formData.append('profileImage', profileImageInput.files[0]);
                         }
-                         // Only append additionalImages if new files are selected
-                        const additionalImagesInput = document.getElementById('additionalImages');
-                        Array.from(additionalImagesInput.files).slice(0, 3).forEach(file => {
-                            formData.append('additionalImages', file);
-                        });
                           let url, method;
                         if (isEditing && editingPetId) {
                             url = `http://localhost:3000/api/pets/${editingPetId}/update`;
@@ -506,26 +497,169 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
-
-        // Function to handle multiple image preview
-        function handleMultipleImagePreview(input, previewContainer) {
-            if (input.files && input.files.length > 0) {
-                previewContainer.innerHTML = '';
-                const files = Array.from(input.files).slice(0, 3);
-                files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const imgContainer = document.createElement('div');
-                        imgContainer.className = 'position-relative';
-                        imgContainer.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
-                        `;
-                        previewContainer.appendChild(imgContainer);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-        }
     </script>
+
+    <style>
+    .my-pets-hero-section {
+        background: linear-gradient(135deg, #FFF8EA 0%, #fff6e3 100%);
+        position: relative;
+        overflow: hidden;
+        min-height: 180px;
+        z-index: 1;
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+        margin-bottom: 0.5rem;
+    }
+    .my-pets-hero-bg {
+        position: absolute;
+        top: -40px;
+        right: -60px;
+        width: 320px;
+        height: 180px;
+        background: radial-gradient(circle at 70% 30%, #FFB03133 0%, #fff6e3 80%);
+        border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+        z-index: 0;
+        opacity: 0.35;
+        pointer-events: none;
+        filter: blur(2px);
+    }
+    .my-pets-hero-paws {
+        position: absolute;
+        left: 32px;
+        bottom: 18px;
+        z-index: 0;
+        opacity: 0.13;
+        pointer-events: none;
+    }
+    .my-pets-hero-paws .fa-paw {
+        color: #FFB031;
+        font-size: 2.1rem;
+        position: absolute;
+        opacity: 0.7;
+    }
+    .my-pets-hero-paws .paw-hero-1 { left: 0; bottom: 0; font-size: 2.1rem; transform: rotate(-10deg); }
+    .my-pets-hero-paws .paw-hero-2 { left: 32px; bottom: 18px; font-size: 1.3rem; transform: rotate(8deg); }
+    .my-pets-hero-paws .paw-hero-3 { left: 60px; bottom: 6px; font-size: 1.7rem; transform: rotate(-18deg); }
+    .my-pets-hero-badge {
+        background: #FFB031;
+        color: #012312;
+        font-weight: 600;
+        border-radius: 50px;
+        padding: 0.4rem 1.2rem;
+        font-size: 1rem;
+        display: inline-block;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+    }
+    .text-gradient {
+        background: linear-gradient(90deg, #FFB031, #ffc107);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .my-pets-heading {
+        font-weight: 700;
+        color: #012312;
+        letter-spacing: 1px;
+        font-size: 2rem;
+    }
+    .my-pets-add-btn {
+        background: linear-gradient(45deg, #FFB031, #ffc107);
+        border: none;
+        color: #012312;
+        font-weight: 600;
+        padding: 0.6rem 1.6rem;
+        border-radius: 50px;
+        transition: all 0.4s ease;
+        box-shadow: 0 10px 20px rgba(255, 176, 49, 0.12);
+    }
+    .my-pets-add-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px rgba(255, 176, 49, 0.18);
+        color: #012312;
+    }
+    .my-pets-cards-grid {
+        background: linear-gradient(120deg, #fffbe7 0%, #fff 100%);
+        border-radius: 24px;
+        box-shadow: 0 8px 32px 0 #FFB03111;
+        padding: 2rem 1.2rem 1.2rem 1.2rem;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    .my-pets-cards-grid::before {
+        content: '\f1b0';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        font-size: 7rem;
+        color: #FFB03111;
+        top: 30%;
+        left: 50%;
+        z-index: 0;
+        pointer-events: none;
+        transform: translate(-50%, -50%) rotate(-15deg);
+        opacity: 0.5;
+    }
+    .my-pets-cards-grid .card {
+        border-radius: 25px;
+        box-shadow: 0 10px 32px rgba(255,176,49,0.08);
+        border: none;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(.4,2,.6,1);
+        position: relative;
+        background: linear-gradient(120deg, #fffbe7 0%, #fff 100%);
+    }
+    .my-pets-cards-grid .card:hover {
+        transform: translateY(-8px) scale(1.02) rotate(-1deg);
+        box-shadow: 0 20px 48px rgba(255,176,49,0.18);
+    }
+    .my-pets-cards-grid .card-img-top {
+        border-top-left-radius: 25px;
+        border-top-right-radius: 25px;
+        height: 260px;
+        object-fit: cover;
+        transition: transform 0.4s cubic-bezier(.4,2,.6,1);
+    }
+    .my-pets-cards-grid .card:hover .card-img-top {
+        transform: scale(1.07) rotate(-2deg);
+    }
+    .my-pets-cards-grid .card-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #012312;
+    }
+    .my-pets-cards-grid .card-text {
+        color: #444;
+        font-size: 1.05rem;
+    }
+    .my-pets-cards-grid .fun-badge {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        background: linear-gradient(90deg, #FFB031, #ffc107);
+        color: #012312;
+        font-weight: 700;
+        border-radius: 50px;
+        padding: 0.35rem 1.1rem;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(255,176,49,0.12);
+        z-index: 2;
+        letter-spacing: 1px;
+        animation: badge-pop 1.2s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    @keyframes badge-pop {
+        0% { transform: scale(0.7); opacity: 0; }
+        60% { transform: scale(1.15); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @media (max-width: 991px) {
+        .my-pets-hero-section { min-height: 120px; }
+        .my-pets-cards-grid { padding: 1rem 0.5rem 0.5rem 0.5rem; }
+    }
+    @media (max-width: 575px) {
+        .my-pets-hero-section { min-height: 80px; padding: 0.7rem 0 !important; }
+        .my-pets-cards-grid { padding: 0.5rem 0.2rem 0.2rem 0.2rem; }
+    }
+    </style>
 </body>
 </html> 

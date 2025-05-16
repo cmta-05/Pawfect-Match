@@ -36,6 +36,8 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/userRoutes');
 const petRoutes = require('./routes/petRoutes');
 const contactRoutes = require('./routes/contact');
+const matchRequestRoutes = require('./routes/matchRequestRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
 
 // Middleware
 app.use(logger('dev'));
@@ -57,6 +59,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use('/users', usersRouter);
 app.use('/api/pets', petRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/match-requests', matchRequestRoutes);
+app.use('/api/favorites', favoriteRoutes);
 
 // Serve frontend HTML files
 app.get('/', (req, res) => {

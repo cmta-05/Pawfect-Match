@@ -9,7 +9,6 @@ const petSchema = new mongoose.Schema({
   location: { type: String, required: true },
   description: { type: String, required: true },
   profileImage: { type: String, default: '/uploads/default-pet.jpg' },
-  additionalImages: [{ type: String }],
   userId: { type: String, required: true }
 }, {
   timestamps: true
