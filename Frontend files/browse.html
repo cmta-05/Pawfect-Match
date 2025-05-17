@@ -744,8 +744,8 @@
             // Find receiverPet and receiver (target pet and its owner)
             let allPets = [];
             try {
-                const petsRes = await fetch('/api/pets');
-                allPets = await petsRes.json();
+                const response = await fetch('/api/pets');
+                allPets = await response.json();
                 localStorage.setItem('pets', JSON.stringify(allPets));
             } catch (e) {
                 allPets = JSON.parse(localStorage.getItem('pets') || '[]');
@@ -880,7 +880,7 @@
 
             // Fetch pets from backend
             try {
-                const response = await fetch('http://localhost:3000/api/pets');
+                const response = await fetch('/api/pets');
                 pets = await response.json();
                 if (!Array.isArray(pets)) throw new Error('Invalid data');
 

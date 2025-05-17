@@ -227,7 +227,7 @@
 
             showLoading();
             try {
-                const response = await fetch(`http://localhost:3000/api/pets/${petId}`, {
+                const response = await fetch(`/api/pets/${petId}`, {
                     method: 'DELETE',
                 });
 
@@ -250,7 +250,7 @@
             showLoading();
             try {
                 // Fetch pet details from backend
-                const response = await fetch(`http://localhost:3000/api/pets/${petId}`);
+                const response = await fetch(`/api/pets/${petId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch pet details');
                 }
@@ -307,7 +307,7 @@
             showLoading();
             try {
                 const userId = localStorage.getItem('userId');
-                const response = await fetch(`http://localhost:3000/api/pets?userId=${userId}`);
+                const response = await fetch(`/api/pets?userId=${userId}`);
                 
                 if (!response.ok) {
                     throw new Error('Failed to load pets');
@@ -448,10 +448,10 @@
                         }
                           let url, method;
                         if (isEditing && editingPetId) {
-                            url = `http://localhost:3000/api/pets/${editingPetId}/update`;
+                            url = `/api/pets/${editingPetId}/update`;
                             method = 'POST';
                         } else {
-                            url = 'http://localhost:3000/api/pets';
+                            url = '/api/pets';
                             method = 'POST';
                         }
 
