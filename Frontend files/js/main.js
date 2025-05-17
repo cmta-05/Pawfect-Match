@@ -1,3 +1,8 @@
+// At the top of the file, ensure pets is defined
+if (typeof pets === 'undefined') {
+    var pets = [];
+}
+
 // Authentication state
 let isLoggedIn = false;
 
@@ -60,6 +65,9 @@ function handleLogout() {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('token');
     localStorage.removeItem('matchRequests');
+    localStorage.removeItem('userPets');
+    localStorage.removeItem('pets');
+    localStorage.removeItem('favorites');
     isLoggedIn = false;
     
     // Update UI
@@ -119,6 +127,14 @@ if (loginForm) {
                 localStorage.setItem('userId', user._id);
                 localStorage.setItem('userName', user.name);
                 localStorage.setItem('userEmail', user.email);
+                // Fetch user's pets after login
+                const petsRes = await fetch(`/api/pets?userId=${user._id}`);
+                if (petsRes.ok) {
+                    const userPets = await petsRes.json();
+                    localStorage.setItem('userPets', JSON.stringify(userPets));
+                } else {
+                    localStorage.setItem('userPets', '[]');
+                }
             } catch (err) {
                 alert('Login failed: ' + err.message);
                 return;
@@ -1201,8 +1217,6 @@ async function handleDeletePet(id) {
             }
             // Success: refresh pets
             await renderMyPets();
-            // Always refresh match requests list
-            await showMatchRequests();
         } catch (err) {
             alert('Error deleting pet. See console for details.');
             console.error('Delete error:', err);
